@@ -118,7 +118,7 @@ function AgentDataTable({ agentData }) {
   )
 }
 
-function NewKeyPopUp({toggleFunc}) {
+function NewKeyPopUp({closePopupFunc}) {
   const [userName, setUserName] = useState("");
   const [authKey, setAuthKey] = useState(
     // lol. lmao
@@ -145,7 +145,7 @@ function NewKeyPopUp({toggleFunc}) {
             <button id="add-to-clipboard" onClick={() => navigator.clipboard.writeText(authKey)}>
               Add To Clipboard
             </button>
-            <button onClick={toggleFunc}>
+            <button onClick={closePopupFunc}>
               Close
             </button>
             </>
@@ -271,7 +271,7 @@ function LogInWithAuthKey() {
     {
       displayNewKeyPopup ? // todo:  what javascript type fuckery did they add to the question mark
         <NewKeyPopUp
-          toggleFunc={() => setDisplayNewKeyPopup(false)}
+          closePopupFunc={() => setDisplayNewKeyPopup(false)}
         />
         :
         null
@@ -315,8 +315,8 @@ function CoordinateMap({agentCoordinates}) {
     canvas.style.height = `${height}px`;
 
     let requestId;
-    let x = agentCoordinates["data"]["x"];
-    let y = agentCoordinates["data"]["y"];
+    let x = (canvas.width / 2) + agentCoordinates["data"]["x"];
+    let y = (canvas.height / 2) + agentCoordinates["data"]["y"];
     function render() {
       context.clearRect(0, 0, canvas.width, canvas.height);
       context.beginPath();
