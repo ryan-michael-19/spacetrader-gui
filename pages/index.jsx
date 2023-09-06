@@ -118,7 +118,7 @@ function AgentDataTable({ agentData }) {
   )
 }
 
-function NewKeyPopUp() {
+function NewKeyPopUp({toggleFunc}) {
   const [userName, setUserName] = useState("");
   const [authKey, setAuthKey] = useState(
     // lol. lmao
@@ -145,7 +145,7 @@ function NewKeyPopUp() {
             <button id="add-to-clipboard" onClick={() => navigator.clipboard.writeText(authKey)}>
               Add To Clipboard
             </button>
-            <button>
+            <button onClick={toggleFunc}>
               Close
             </button>
             </>
@@ -267,10 +267,12 @@ function LogInWithAuthKey() {
       }
     </div>
     
-    <button id="get-new-key-popup" onClick={() => setDisplayNewKeyPopup(!displayNewKeyPopup)}>Get New Key</button>
+    <button id="get-new-key-popup" onClick={() => setDisplayNewKeyPopup(true)}>Get New Key</button>
     {
       displayNewKeyPopup ? // todo:  what javascript type fuckery did they add to the question mark
-        <NewKeyPopUp/>
+        <NewKeyPopUp
+          toggleFunc={() => setDisplayNewKeyPopup(false)}
+        />
         :
         null
     }
