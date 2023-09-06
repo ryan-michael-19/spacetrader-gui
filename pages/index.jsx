@@ -22,25 +22,45 @@ async function GetAgentData(apiKey) {
   return message;
 }
 
-async function GetAgentCoordinates(apiKey, headquarters) {
-  let response = await fetch(
-      `https://api.spacetraders.io/v2/systems/${headquarters.slice(0,7)}/waypoints/${headquarters}/`,{
-      method: 'GET',
-      headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-      }
-  });
-  let message = "";
-  if (response.status === 200) {
-      let res_data = await response.json();
-      message = res_data;
+async function GetSystemWaypointData(apiKey, headquarters) {
+  const pageLimit = 20;
+  async function requestWaypointPage(apiKey, headquarters, pageNumber){
+    let query_params = new URLSearchParams({
+          limit: pageLimit,
+          page: pageNumber
+    });
+    let response = await fetch(
+        `https://api.spacetraders.io/v2/systems/${headquarters.slice(0,7)}/waypoints?`+query_params, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        }
+    });
+    let message = "";
+    if (response.status === 200) {
+        let res_data = await response.json();
+        message = res_data;
+    }
+    else {
+        throw `Error: Response: ${response.status}`;
+    }
+    return message;
   }
-  else {
-      message = {"data": `Error: Response: ${response.status}`};
+
+  let firstPage = await requestWaypointPage(apiKey, headquarters, 1);
+  // todo: re add this if we get 429s
+  // await new Promise(r => setTimeout(r, 600));
+  let totalPages = Math.ceil(firstPage['meta']['total'] / pageLimit);
+  let allPages = [firstPage];
+  // note i is set to 2 since we already have the first page
+  for (let i = 2; i <= totalPages; i++)
+  {
+    allPages.push(await requestWaypointPage(apiKey, headquarters, i));
+    await new Promise(r => setTimeout(r, 600));
   }
-  return message;
+  return allPages;
 }
 
 async function GetNewKey(username) {
@@ -231,14 +251,23 @@ function LogInWithAuthKey() {
   const [displayNewKeyPopup, setDisplayNewKeyPopup] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [agentData, setAgentData] = useState({});
-  const [agentCoordinates, setAgentCoordinates] = useState({});
+  const [systemWaypointData, setSystemWaypointData] = useState({});
   const [contractData, setContractData] = useState({});
 
   async function getAllData(apiKey) {
     let agentDataResult = await GetAgentData(apiKey);
     setAgentData(agentDataResult);
-    let agentCoordinatesResult = await GetAgentCoordinates(apiKey, agentDataResult['data']['headquarters']);
-    setAgentCoordinates(agentCoordinatesResult);
+    let systemWaypointDataResult = {};
+    try{
+      systemWaypointDataResult = await GetSystemWaypointData(apiKey, agentDataResult['data']['headquarters']);
+    }
+    catch(err)
+    {
+      // communicate to CoordinateMap that we couldn't find anything. It will automatically render a blank map.
+      // todo: Make CoordinateMap notify user that there was an error getting system data
+      systemWaypointDataResult = [];
+    }
+    setSystemWaypointData(systemWaypointDataResult);
     let contractDataResult = await GetContractData(apiKey);
     setContractData(contractDataResult);
   }
@@ -255,11 +284,11 @@ function LogInWithAuthKey() {
       </div>
       {
         agentData !== undefined && "data" in agentData &&
-        agentCoordinates !== undefined && "data" in agentCoordinates &&
+        systemWaypointData !== undefined && //"data" in systemWaypointData &&
         contractData !== undefined && "data" in contractData ?
         <>
           <AgentDataTable agentData={agentData}/>
-          <CoordinateMap agentCoordinates={agentCoordinates}/>
+          <CoordinateMap systemWaypointPages={systemWaypointData} agentData={agentData}/>
           <ContractDataTable contractData={contractData}/>
         </>
         :
@@ -293,7 +322,7 @@ function getPixelRatio(context) {
     return (window.devicePixelRatio || 1) / backingStore;
 }
 
-function CoordinateMap({agentCoordinates}) {
+function CoordinateMap({systemWaypointPages, agentData}) {
   let ref = useRef();
 
   useEffect(() => {
@@ -315,20 +344,29 @@ function CoordinateMap({agentCoordinates}) {
     canvas.style.height = `${height}px`;
 
     let requestId;
-    let x = (canvas.width / 2) + agentCoordinates["data"]["x"];
-    let y = (canvas.height / 2) + agentCoordinates["data"]["y"];
+    // blah
     function render() {
       context.clearRect(0, 0, canvas.width, canvas.height);
-      context.beginPath();
-      context.arc(
-        x,
-        y,
-        5,
-        0,
-        2 * Math.PI
-      );
-      context.fill();
-      context.fillText("You are here", x+10, y+10);
+      for (const systemWaypointPage of systemWaypointPages)
+      {
+        for (const waypoint of systemWaypointPage["data"]){
+          let x = (canvas.width / 2) + waypoint["x"];
+          let y = (canvas.height / 2) + waypoint["y"];
+          context.beginPath();
+          context.arc(
+            x,
+            y,
+            5,
+            0,
+            2 * Math.PI
+          );
+          context.fill();
+          if (waypoint['symbol'] === agentData['data']['headquarters'])
+          {
+            context.fillText("You are here", x+10, y+10);
+          }
+        }
+      }
       requestId = requestAnimationFrame(render);
     }
     render();
