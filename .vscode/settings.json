@@ -1,0 +1,14 @@
+{
+    "window.zoomLevel": -2,
+    "liveServer.settings.donotShowInfoMsg": true,
+    "editor.lineNumbers": "relative",
+    "editor.minimap.enabled": false,
+    "liveServer.settings.AdvanceCustomBrowserCmdLine": "C:\\Program Files\\Firefox Developer Edition\\firefox.exe --start-debugger-server --private-window",
+    "liveServer.settings.root": "/",
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[python]": {
+        "editor.formatOnType": true
+    }
+}

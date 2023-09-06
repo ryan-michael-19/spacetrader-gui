@@ -1,0 +1,115 @@
+body {
+    margin-left: 8% ;
+    margin-right: 8% ;
+    margin-top: 30px ;
+    font-family: 'Courier New', Courier, monospace
+}
+
+input {
+    width: 600px;
+}
+
+#get-new-key-popup {
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+
+.center {
+    position: relative;
+    height: 60%;
+    width: 80%;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+}
+
+#new-key-text {
+    color: #AAAAAA;
+}
+
+#new-key-popup {
+    position: absolute;
+    top: 50vh;
+    left: 50vw;
+    background-color: #222222; 
+    text-align: center;
+    justify-content: center;
+    width: 500px; 
+    height: 300px; 
+    border-radius: 20px;
+    word-wrap: break-word;
+    transform: translate(-50%, -50%);
+}
+
+#save-token-warning {
+    margin-top: 10px;
+    color: #666666;
+}
+#new-key-popup p.wrappable {
+    overflow-y: scroll;
+    height: 60px;
+}
+
+#new-key-popup label {
+    color: #888888;
+}
+
+#new-key-popup input {
+    /* margin-top: 0px; */
+    width: 50%
+}
+
+#new-key-popup button {
+    margin-top: 20px;
+}
+
+#login {
+    display: flex;
+    margin-bottom: 20px;
+}
+
+#login * {
+    margin: 0 5px;
+
+}
+
+.contract-row:hover {
+    background-color: lightgray;
+}
+
+.subtable {
+    border-collapse: collapse;
+    font-size: 80%;
+    border: 1px solid gray;
+}
+
+.subtable th, td {
+    border-collapse: collapse;
+    border: 1px solid white;
+}
+
+.main-table {
+    position: relative;
+    width: 100%;
+    border: 1px solid black;
+    border-collapse: collapse;
+    font-size: 1vw;
+    margin: 10px 0 10px;
+}
+
+.main-table th {
+    text-align: left;
+}
+
+.main-table th, td {
+    border: 1px solid;
+    border-collapse: collapse;
+    padding: 8px;
+}
+
+canvas {
+    outline: black 1px solid;
+    height: 500px;
+    width: 100%;
+}
