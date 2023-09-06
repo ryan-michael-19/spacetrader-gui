@@ -292,21 +292,21 @@ function LogInWithAuthKey() {
           <ContractDataTable contractData={contractData}/>
         </>
         :
-        null
+        <>
+        <button id="get-new-key-popup" onClick={() => setDisplayNewKeyPopup(true)}>Get New Key</button>
+        {
+          displayNewKeyPopup ? // todo:  what javascript type fuckery did they add to the question mark
+            <NewKeyPopUp
+              closePopupFunc={() => setDisplayNewKeyPopup(false)}
+            />
+            :
+            null
+        }
+        </>
       }
     </div>
-    
-    <button id="get-new-key-popup" onClick={() => setDisplayNewKeyPopup(true)}>Get New Key</button>
-    {
-      displayNewKeyPopup ? // todo:  what javascript type fuckery did they add to the question mark
-        <NewKeyPopUp
-          closePopupFunc={() => setDisplayNewKeyPopup(false)}
-        />
-        :
-        null
-    }
   </>
-  )
+  );
 }
 
 function getPixelRatio(context) {
