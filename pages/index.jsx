@@ -92,6 +92,19 @@ async function GetNewKey(username) {
     return message
 }
 
+async function AcceptContract(apiKey, contractID) {
+    let response = await fetch(
+        `https://api.spacetraders.io/v2/my/contracts/${contractID}/accept`,{
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+    });
+    return await response.json();
+}
+
 async function GetContractData(apiKey) {
   let response = await fetch(
       'https://api.spacetraders.io/v2/my/contracts/',{
@@ -142,7 +155,7 @@ function NewKeyPopUp({closePopupFunc}) {
   const [userName, setUserName] = useState("");
   const [authKey, setAuthKey] = useState(
     // lol. lmao
-    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGlmaWVyIjoiUllBTiIsInZlcnNpb24iOiJ2MiIsInJlc2V0X2RhdGUiOiIyMDIzLTA5LTAyIiwiaWF0IjoxNjk0MDEyNTY0LCJzdWIiOiJhZ2VudC10b2tlbiJ9.QXOBVFfj9axOlvdMCOPbWagLRQ-VPQZl2X4f4PD7u4w7onY65qAmvUwBp6lKv5CjTfdK1w6qXEcukXAtpxSgJjd5Q79OSDVk0UmaBNB9u8RtRwWwzmf49WG5J5fsadtzCZmCVq96AUY2gYHAJeWD1yFCKmVjf4Y_f2IefMzkNoWW4-8xet6XqmGT_d39w-ebgw0cZAYy9U_aNpUJO0wQGf1Oh9v7Iavz_2zmXMYDhk47kasAb3Gx-c9l8kyHPriW-2ek2tyr0bLN3rITD_2IZf-KIqx2LihCF-h-uRSjSu-wQh-ixTzRYbbKpDDedSLmnrZSEF8L--C1Ds90yWcFcg"
+    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGlmaWVyIjoiUllBTi1NSUNIQUVMLTEiLCJ2ZXJzaW9uIjoidjIiLCJyZXNldF9kYXRlIjoiMjAyMy0wOS0wMiIsImlhdCI6MTY5NDExNzg3MCwic3ViIjoiYWdlbnQtdG9rZW4ifQ.PhempbrzyZJ1QEf4n5vZrQo59FGv1wG1SxeMm1P_T_zj_yflTEfPxfikusPeQxagqdec-o_TIl-nPcLHFQyPv2zSNRVd49UDqwjFGppjAXpXXbce5G__QE0npDN55VkdtlNAqCwHu_hf5eQSvFV9m3P18SBuuAutGAWgSC9y7uC3kMYJSqF39J4h2nlGl5ZtEaWhQjMdrHtfNat5ucQdRxzZCqvl04z5bdCPCMCin8uMhyGzi1KbEOQcQO2kheYsP0opTs4JmkaPVdltXJZ5YgaroajeDqlA9p9MwSlZ8wP3QJwjvlBeYbtjTNxO2c1xBTUsqVUisPP05OQtr2OrcA"
     // ""
   );
   return (
@@ -177,9 +190,10 @@ function NewKeyPopUp({closePopupFunc}) {
   )
 }
 
-function ContractDataTable({contractData}) {
+function ContractDataTable({apiKey, contractData, updateContractTable}) {
   let contractTableRows = contractData["data"].map(element => (
-    <tr className="contract-row">
+    <tr className="contract-row" 
+      onClick={async () => {await AcceptContract(apiKey, element["id"]) ; updateContractTable()}}>
       <td>
         {element["type"]}
       </td>
@@ -191,29 +205,29 @@ function ContractDataTable({contractData}) {
       </td>
       <table className="subtable">
         <tablebody>
-          <tr>
-            <th>Resource</th>
-            <th>Destination</th>
-            <th>Required Resource Count</th>
-            <th>Fulfilled Resource Count</th>
-          </tr>
-          {element["terms"]["deliver"].map(resource => 
-          <tr>
-            <td>
-              {resource["tradeSymbol"]}
-            </td>
-            <td>
-              {resource["destinationSymbol"]}
-            </td>
-            <td>
-              {resource["unitsRequired"]}
-            </td>
-            <td>
-              {resource["unitsFulfilled"]}
-            </td>
-          </tr>
-          )}
-        </tablebody>
+            <tr>
+              <th>Resource</th>
+              <th>Destination</th>
+              <th>Required Resource Count</th>
+              <th>Fulfilled Resource Count</th>
+            </tr>
+            {element["terms"]["deliver"].map(resource => 
+            <tr>
+              <td>
+                {resource["tradeSymbol"]}
+              </td>
+              <td>
+                {resource["destinationSymbol"]}
+              </td>
+              <td>
+                {resource["unitsRequired"]}
+              </td>
+              <td>
+                {resource["unitsFulfilled"]}
+              </td>
+            </tr>
+            )}
+          </tablebody>
       </table>
       <td>
         {element["accepted"] ? "Yes" : "No"}
@@ -289,7 +303,9 @@ function LogInWithAuthKey() {
         <>
           <AgentDataTable agentData={agentData}/>
           <CoordinateMap systemWaypointPages={systemWaypointData} agentData={agentData}/>
-          <ContractDataTable contractData={contractData}/>
+          <ContractDataTable 
+            apiKey={apiKey} contractData={contractData} 
+            updateContractTable={async () => setContractData(await GetContractData(apiKey))}/>
         </>
         :
         <>
@@ -356,7 +372,7 @@ function CoordinateMap({systemWaypointPages, agentData}) {
           context.arc(
             x,
             y,
-            5,
+            2.5,
             0,
             2 * Math.PI
           );
