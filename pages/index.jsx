@@ -153,7 +153,6 @@ function LogInWithAuthKey() {
   const [contractData, setContractData] = useState(undefined);
   const [agentRequestSent, setAgentRequestSent] = useState(false);
   const [agentDataError, setAgentDataError] = useState(true);
-  const [coordMapZoom, setCoordMapZoom] = useState(1);
   async function getAllData(apiKey) {
     let agentDataResult;
     let errorFromRequest = false;
