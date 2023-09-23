@@ -14,7 +14,7 @@ export async function GetAgentData(apiKey) {
       message = res_data;
   }
   else {
-      message = {"data": `Error: Response: ${response.status}`};
+    throw new Error(`Response: ${response.status}`);
   }
   return message;
 }
@@ -27,7 +27,7 @@ export async function GetSystemWaypointData(apiKey, headquarters) {
           page: pageNumber
     });
     let response = await fetch(
-        `https://api.spacetraders.io/v2/systems/${headquarters.slice(0,7)}/waypoints?`+query_params, {
+        `https://api.spacetraders.io/v2/systems/${headquarters.slice(0,6)}/waypoints?`+query_params, {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -41,7 +41,7 @@ export async function GetSystemWaypointData(apiKey, headquarters) {
         message = res_data;
     }
     else {
-        throw `Error: Response: ${response.status}`;
+        throw new Error(`Response: ${response.status}`);
     }
     return message;
   }
@@ -83,7 +83,7 @@ export async function GetNewKey(username) {
             message = res_data["data"]["token"];
         }
         else {
-            message = `Error: Response: ${response.status}: Could not get token. Does your username already exist?`;
+            throw new Error(`Response: ${response.status}`);
         }
     }
     return message
@@ -118,7 +118,7 @@ export async function GetContractData(apiKey) {
       message = res_data;
   }
   else {
-      message = {"data": `Error: Response: ${response.status}`};
+    throw new Error(`Response: ${response.status}`);
   }
   return message;
 }

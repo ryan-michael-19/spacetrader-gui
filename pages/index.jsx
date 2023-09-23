@@ -30,34 +30,43 @@ function AgentDataTable({ agentData }) {
 
 function NewKeyPopUp({closePopupFunc}) {
   const [userName, setUserName] = useState("");
-  const [authKey, setAuthKey] = useState("");
+  // const [authKey, setAuthKey] = useState("");
+  const [authKeyComponentData, setAuthKeyComponentData] = useState(<></>);
+  async function getAuthKeyComponentData(username){
+    try {
+      let authKey = await GetNewKey(username) ;
+      return (              
+        <>
+          <p id="save-token-warning">
+            Save your token. You will not be able to retrieve it again.
+          </p>
+          <p id="new-key-text" className="wrappable">
+            {authKey}
+          </p>
+          <button id="add-to-clipboard" onClick={() => navigator.clipboard.writeText(authKey)}>
+            Add To Clipboard
+          </button>
+        </>
+      );
+    }
+    catch(err) {
+      return <p>There was an error getting an auth key.</p>;
+    }
+  }
   return (
     <div id="new-key-popup">
       <div className="center">
         <label htmlFor="new-user-name">Enter a username:</label>
         <input id="new-user-name" type="text" onChange={e => setUserName(e.target.value)}/>
-        <button id="get-new-key" onClick={async () => setAuthKey(await GetNewKey(userName))}>
+        <button id="get-new-key" onClick={async () => setAuthKeyComponentData(await getAuthKeyComponentData(userName))}>
           Submit
         </button>
-        {
-          authKey !== "" && authKey.slice(0,5) !== "Error" ? 
-            <>
-            <p id="save-token-warning">
-              Save your token. You will not be able to retrieve it again.
-            </p>
-            <p id="new-key-text" className="wrappable">
-              {authKey}
-            </p>
-            <button id="add-to-clipboard" onClick={() => navigator.clipboard.writeText(authKey)}>
-              Add To Clipboard
-            </button>
-            <button onClick={closePopupFunc}>
-              Close
-            </button>
-            </>
-            :
-            null
-        }
+        <>
+          {authKeyComponentData}
+          <button onClick={closePopupFunc}>
+            Close
+          </button>
+        </>
       </div>
     </div>
   )
@@ -126,7 +135,8 @@ function ContractDataTable({apiKey, contractData, updateContractTable}) {
             <th>Fulfilled</th>
             <th>Deadline to Accept</th>
           </tr>
-          {contractTableRows}
+          {contractTableRows} 
+            
         </tbody>
       </table>
       Click On a Contract Row to Accept It
@@ -137,26 +147,48 @@ function ContractDataTable({apiKey, contractData, updateContractTable}) {
 function LogInWithAuthKey() {
   const [displayNewKeyPopup, setDisplayNewKeyPopup] = useState(false);
   const [apiKey, setApiKey] = useState("");
-  const [agentData, setAgentData] = useState({});
-  const [systemWaypointData, setSystemWaypointData] = useState({});
-  const [contractData, setContractData] = useState({});
+  const [agentData, setAgentData] = useState(undefined);
+  const [systemWaypointData, setSystemWaypointData] = useState(undefined);
+  const [contractData, setContractData] = useState(undefined);
+  const [agentRequestSent, setAgentRequestSent] = useState(false);
+  const [agentDataError, setAgentDataError] = useState(true);
 
   async function getAllData(apiKey) {
-    let agentDataResult = await GetAgentData(apiKey);
+    let agentDataResult;
+    let errorFromRequest = false;
+    try {
+      agentDataResult = await GetAgentData(apiKey);
+    }
+    catch(err) {
+      agentDataResult = [];
+      errorFromRequest = true;
+    }
     setAgentData(agentDataResult);
-    let systemWaypointDataResult = {};
-    try{
+
+    let systemWaypointDataResult;
+    try {
       systemWaypointDataResult = await GetSystemWaypointData(apiKey, agentDataResult['data']['headquarters']);
     }
-    catch(err)
-    {
+    catch(err) {
       // communicate to CoordinateMap that we couldn't find anything. It will automatically render a blank map.
       // todo: Make CoordinateMap notify user that there was an error getting system data
       systemWaypointDataResult = [];
+      errorFromRequest = true;
     }
     setSystemWaypointData(systemWaypointDataResult);
-    let contractDataResult = await GetContractData(apiKey);
+
+    let contractDataResult;
+    try {
+      contractDataResult = await GetContractData(apiKey);
+    }
+    catch(err) {
+      contractDataResult = [];
+      errorFromRequest = true;
+    }
     setContractData(contractDataResult);
+
+    setAgentRequestSent(true);
+    setAgentDataError(errorFromRequest);
   }
 
   return(
@@ -170,29 +202,37 @@ function LogInWithAuthKey() {
         <button id='get-agent-data' onClick={async () => await getAllData(apiKey)}>Get Agent Data</button>
       </div>
       {
-        agentData !== undefined && "data" in agentData &&
-        systemWaypointData !== undefined && //"data" in systemWaypointData &&
-        contractData !== undefined && "data" in contractData ?
-        <>
-          <AgentDataTable agentData={agentData}/>
-          <CoordinateMap systemWaypointPages={systemWaypointData} agentData={agentData}/>
-          <ContractDataTable 
-            apiKey={apiKey} contractData={contractData} 
-            updateContractTable={async () => setContractData(await GetContractData(apiKey))}/>
-        </>
+        // todo: clean up this trinary nonsense
+        agentRequestSent && agentDataError ? 
+          <>
+            <p>There was an error getting your agent's data. Are you using a valid auth key?</p>
+            <button id="get-new-key-popup" onClick={() => setDisplayNewKeyPopup(true)}>Get New Key</button>
+          </>
+        : agentRequestSent && ! agentDataError ?
+            <>
+            <AgentDataTable agentData={agentData}/>
+            <CoordinateMap systemWaypointPages={systemWaypointData} agentData={agentData}/>
+            <ContractDataTable 
+              apiKey={apiKey} contractData={contractData} 
+              updateContractTable={async () => setContractData(await GetContractData(apiKey))}/>
+          </>
+        : ! agentRequestSent ?
+          <>
+            <button id="get-new-key-popup" onClick={() => setDisplayNewKeyPopup(true)}>Get New Key</button>
+          </>
         :
-        <>
-        <button id="get-new-key-popup" onClick={() => setDisplayNewKeyPopup(true)}>Get New Key</button>
-        {
-          displayNewKeyPopup ? // todo:  what javascript type fuckery did they add to the question mark
-            <NewKeyPopUp
-              closePopupFunc={() => setDisplayNewKeyPopup(false)}
-            />
-            :
-            null
-        }
-        </>
+          // I missed a bunch of edge cases YEEEEEEET
+          <p>bruh</p>
       }
+      {
+        displayNewKeyPopup ? 
+          <NewKeyPopUp
+            closePopupFunc={() => setDisplayNewKeyPopup(false)}
+          />
+          :
+          null
+      }
+      
     </div>
   </>
   );
