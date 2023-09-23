@@ -7,7 +7,6 @@ function AgentDataTable({ agentData }) {
   // TODO: Error handling when we get bad agentdata
   return (
     <>
-    Agent Data
     <table className="main-table">
       <tbody>
       <tr>
