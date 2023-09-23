@@ -30,11 +30,7 @@ function AgentDataTable({ agentData }) {
 
 function NewKeyPopUp({closePopupFunc}) {
   const [userName, setUserName] = useState("");
-  const [authKey, setAuthKey] = useState(
-    // lol. lmao
-    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGlmaWVyIjoiUllBTi1NSUNIQUVMLTEiLCJ2ZXJzaW9uIjoidjIiLCJyZXNldF9kYXRlIjoiMjAyMy0wOS0wMiIsImlhdCI6MTY5NDExNzg3MCwic3ViIjoiYWdlbnQtdG9rZW4ifQ.PhempbrzyZJ1QEf4n5vZrQo59FGv1wG1SxeMm1P_T_zj_yflTEfPxfikusPeQxagqdec-o_TIl-nPcLHFQyPv2zSNRVd49UDqwjFGppjAXpXXbce5G__QE0npDN55VkdtlNAqCwHu_hf5eQSvFV9m3P18SBuuAutGAWgSC9y7uC3kMYJSqF39J4h2nlGl5ZtEaWhQjMdrHtfNat5ucQdRxzZCqvl04z5bdCPCMCin8uMhyGzi1KbEOQcQO2kheYsP0opTs4JmkaPVdltXJZ5YgaroajeDqlA9p9MwSlZ8wP3QJwjvlBeYbtjTNxO2c1xBTUsqVUisPP05OQtr2OrcA"
-    // ""
-  );
+  const [authKey, setAuthKey] = useState("");
   return (
     <div id="new-key-popup">
       <div className="center">
