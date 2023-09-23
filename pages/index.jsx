@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import '../main.css';
 import { GetAgentData, GetSystemWaypointData, GetNewKey, 
           AcceptContract, GetContractData } from '../web_requests'
+import { CreateWayPoint } from '../map_objects'
 
 function AgentDataTable({ agentData }) {
   // TODO: Error handling when we get bad agentdata
@@ -144,6 +145,7 @@ function ContractDataTable({apiKey, contractData, updateContractTable}) {
 }
 
 function LogInWithAuthKey() {
+  // Todo: this is waaaaaay too much state to keep in one place.
   const [displayNewKeyPopup, setDisplayNewKeyPopup] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [agentData, setAgentData] = useState(undefined);
@@ -151,7 +153,7 @@ function LogInWithAuthKey() {
   const [contractData, setContractData] = useState(undefined);
   const [agentRequestSent, setAgentRequestSent] = useState(false);
   const [agentDataError, setAgentDataError] = useState(true);
-
+  const [coordMapZoom, setCoordMapZoom] = useState(1);
   async function getAllData(apiKey) {
     let agentDataResult;
     let errorFromRequest = false;
@@ -210,7 +212,10 @@ function LogInWithAuthKey() {
         : agentRequestSent && ! agentDataError ?
             <>
             <AgentDataTable agentData={agentData}/>
-            <CoordinateMap systemWaypointPages={systemWaypointData} agentData={agentData}/>
+            <CoordinateMap 
+              systemWaypointPages={systemWaypointData} agentData={agentData} // zoom={coordMapZoom}
+              // onWheel={(e) => coordMapZoom <= 1 ? setCoordMapZoom(1) : setCoordMapZoom(coordMapZoom+e.deltaY)}
+            />
             <ContractDataTable 
               apiKey={apiKey} contractData={contractData} 
               updateContractTable={async () => setContractData(await GetContractData(apiKey))}/>
@@ -252,7 +257,7 @@ function getPixelRatio(context) {
 
 function CoordinateMap({systemWaypointPages, agentData}) {
   let ref = useRef();
-
+  const [zoom, setZoom] = useState(1);
   useEffect(() => {
     let canvas = ref.current;
     let context = canvas.getContext('2d');
@@ -277,19 +282,11 @@ function CoordinateMap({systemWaypointPages, agentData}) {
       context.clearRect(0, 0, canvas.width, canvas.height);
       for (const systemWaypointPage of systemWaypointPages)
       {
-        for (const waypoint of systemWaypointPage["data"]){
-          let x = (canvas.width / 2) + waypoint["x"];
-          let y = (canvas.height / 2) + waypoint["y"];
-          context.beginPath();
-          context.arc(
-            x,
-            y,
-            2.5,
-            0,
-            2 * Math.PI
-          );
-          context.fill();
-          if (waypoint['symbol'] === agentData['data']['headquarters'])
+        for (const waypoint of systemWaypointPage["data"].map(CreateWayPoint)){
+          let x = (canvas.width / 2) + waypoint.x*zoom;
+          let y = (canvas.height / 2) + waypoint.y*zoom;
+          waypoint.render(context, x, y);
+          if (waypoint.symbol === agentData['data']['headquarters'])
           {
             context.fillText("You are here", x+10, y+10);
           }
@@ -307,6 +304,16 @@ function CoordinateMap({systemWaypointPages, agentData}) {
   return (
     <canvas
       ref={ref}
+      onWheel={e => {
+        const zoomFactor = 200;
+        const newZoom = zoom-(e.deltaY / zoomFactor);
+        if (newZoom <= 1){
+          setZoom(1);
+        }
+        else {
+          setZoom(newZoom);
+        }
+      }}
     />
   );
 }
