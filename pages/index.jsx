@@ -152,7 +152,7 @@ function LogInWithAuthKey() {
   const [systemWaypointData, setSystemWaypointData] = useState(undefined);
   const [contractData, setContractData] = useState(undefined);
   const [agentRequestSent, setAgentRequestSent] = useState(false);
-  const [agentDataError, setAgentDataError] = useState(true);
+  const [agentDataError, setAgentDataError] = useState(false);
   async function getAllData(apiKey) {
     let agentDataResult;
     let errorFromRequest = false;
@@ -257,6 +257,11 @@ function getPixelRatio(context) {
 function CoordinateMap({systemWaypointPages, agentData}) {
   let ref = useRef();
   const [zoom, setZoom] = useState(1);
+  const [previousMouseLoc, setPreviousMouseLoc] = useState({x:0, y:0});
+  const [offset, setOffset] = useState({x: 0, y: 0});
+  let [mouseIsDown, setMouseIsDown] = useState(false);
+
+  // todo: do we really need an effect here?
   useEffect(() => {
     let canvas = ref.current;
     let context = canvas.getContext('2d');
@@ -282,12 +287,12 @@ function CoordinateMap({systemWaypointPages, agentData}) {
       for (const systemWaypointPage of systemWaypointPages)
       {
         for (const waypoint of systemWaypointPage["data"].map(CreateWayPoint)){
-          let x = (canvas.width / 2) + waypoint.x*zoom;
-          let y = (canvas.height / 2) + waypoint.y*zoom;
+          let x = (canvas.width / 2) + (waypoint.x + offset.x)*zoom;
+          let y = (canvas.height / 2) + (waypoint.y + offset.y)*zoom;
           waypoint.render(context, x, y);
           if (waypoint.symbol === agentData['data']['headquarters'])
           {
-            context.fillText("You are here", x+10, y+10);
+            context.fillText("You are here", x+(10), y+(10));
           }
         }
       }
@@ -303,6 +308,8 @@ function CoordinateMap({systemWaypointPages, agentData}) {
   return (
     <canvas
       ref={ref}
+      // Todo: put lambdas somewhere more organized
+      // zoom in and out with mousewheel
       onWheel={e => {
         const zoomFactor = 200;
         const newZoom = zoom-(e.deltaY / zoomFactor);
@@ -311,6 +318,34 @@ function CoordinateMap({systemWaypointPages, agentData}) {
         }
         else {
           setZoom(newZoom);
+        }
+      }}
+
+      // used https://stackoverflow.com/a/59741870 as a template
+      onMouseDown={e => {
+        setMouseIsDown(true);
+        setPreviousMouseLoc({x: e.pageX, y: e.pageY});
+      }}
+      onMouseUp={e => {
+        setMouseIsDown(false);
+      }}
+      onMouseMove={e => {
+        if (mouseIsDown) {
+          const diffX = e.pageX - previousMouseLoc.x;
+          const diffY = e.pageY - previousMouseLoc.y;
+          const delta = 6;
+          if (Math.abs(diffX) < delta && Math.abs(diffY) < delta) {
+            // Click!
+          } else {
+            // drag
+            const setNewOffset = (coord, diff) => {
+              return coord+(diff/zoom);
+            };
+            let newOffset = {x: setNewOffset(offset.x, diffX), y: setNewOffset(offset.y, diffY)};
+            setOffset(newOffset);
+            setPreviousMouseLoc({x: e.pageX, y: e.pageY});
+            console.log(offset);
+          }
         }
       }}
     />
