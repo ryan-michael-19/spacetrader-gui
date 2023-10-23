@@ -344,7 +344,6 @@ function CoordinateMap({systemWaypointPages, agentData}) {
             let newOffset = {x: setNewOffset(offset.x, diffX), y: setNewOffset(offset.y, diffY)};
             setOffset(newOffset);
             setPreviousMouseLoc({x: e.pageX, y: e.pageY});
-            console.log(offset);
           }
         }
       }}

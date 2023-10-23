@@ -40,6 +40,14 @@ class Waypoint {
     }
 
     render(context, x, y) {
+        let color;
+        if (this.traits.map(t=>t.symbol).includes("SHIPYARD")) {
+            color = "red";
+        } else {
+            color = "black";
+        }
+        context.fillStyle = color;
+        context.strokeStyle = color;
         context.beginPath(); 
         context.arc(
             x,
