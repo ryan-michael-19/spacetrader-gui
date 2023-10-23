@@ -26,8 +26,9 @@ export async function GetSystemWaypointData(apiKey, headquarters) {
           limit: pageLimit,
           page: pageNumber
     });
+    let [sector, system, waypoint] = headquarters.split("-");
     let response = await fetch(
-        `https://api.spacetraders.io/v2/systems/${headquarters.slice(0,6)}/waypoints?`+query_params, {
+        `https://api.spacetraders.io/v2/systems/${sector}-${system}/waypoints?`+query_params, {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
