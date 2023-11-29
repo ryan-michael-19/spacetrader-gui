@@ -7,8 +7,11 @@ export function CreateWayPoint(requestData){
     else if (wayPointType === "MOON") {
         return new Moon(requestData);
     }
-    else if (wayPointType == "ASTEROID_FIELD") {
+    else if (wayPointType == "ASTEROID_FIELD" || wayPointType == "ASTEROID_BASE") {
         return new AsteroidField(requestData);
+    }
+    else if (wayPointType == 'ASTEROID' || wayPointType == "ENGINEERED_ASTEROID") {
+        return new Asteroid(requestData);
     }
     else if (wayPointType == "GAS_GIANT") {
         return new GasGiant(requestData);
@@ -18,6 +21,9 @@ export function CreateWayPoint(requestData){
     }
     else if (wayPointType == "JUMP_GATE") {
         return new JumpGate(requestData);
+    }
+    else if (wayPointType == "FUEL_STATION") {
+        return new FuelStation(requestData);
     }
     else {
         throw Error("Undefined Waypoint Type");
@@ -101,4 +107,18 @@ class JumpGate extends Waypoint {
         this.size = 6;
     }
 
+}
+
+class Asteroid extends Waypoint {
+    constructor(requestData){
+        super(requestData);
+        this.size = 1;
+    }
+}
+
+class FuelStation extends Waypoint {
+    constructor(requestData){
+        super(requestData);
+        this.size = 3;
+    }
 }
