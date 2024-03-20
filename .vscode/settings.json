@@ -10,5 +10,6 @@
     },
     "[python]": {
         "editor.formatOnType": true
-    }
+    },
+    "typescript.tsdk": "node_modules\\typescript\\lib"
 }

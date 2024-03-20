@@ -1,10 +1,14 @@
+// import { AssertionError } from 'assert';
 import { useState, useRef, useEffect } from 'react';
 import '../main.css';
 import { GetAgentData, GetSystemWaypointData, GetNewKey, 
-          AcceptContract, GetContractData } from '../web_requests'
+          AcceptContract, GetContractData, ResponseData, 
+          AgentData, ContractData, SingleWaypointData, 
+          WaypointData, WaypointMetaData } from '../web_requests'
 import { CreateWayPoint } from '../map_objects'
+import { assert } from "../utils"
 
-function AgentDataTable({ agentData }) {
+function AgentDataTable({ agentData }: { agentData: ResponseData<AgentData, null> }) {
   // TODO: Error handling when we get bad agentdata
   return (
     <>
@@ -17,10 +21,10 @@ function AgentDataTable({ agentData }) {
         <th>Credits</th>
       </tr>
       <tr>
-        <td>{agentData["data"]["accountId"]}</td>
-        <td>{agentData["data"]["symbol"]}</td>
-        <td>{agentData["data"]["headquarters"]}</td>
-        <td>{agentData["data"]["credits"]}</td>
+        <td>{agentData.data?.accountId}</td>
+        <td>{agentData.data?.symbol}</td>
+        <td>{agentData.data?.headquarters}</td>
+        <td>{agentData.data?.credits}</td>
       </tr>
       </tbody>
     </table>
@@ -28,11 +32,10 @@ function AgentDataTable({ agentData }) {
   )
 }
 
-function NewKeyPopUp({closePopupFunc}) {
+function NewKeyPopUp({closePopupFunc}: {closePopupFunc: () => void}) {
   const [userName, setUserName] = useState("");
-  // const [authKey, setAuthKey] = useState("");
   const [authKeyComponentData, setAuthKeyComponentData] = useState(<></>);
-  async function getAuthKeyComponentData(username){
+  async function getAuthKeyComponentData(username: string){
     try {
       let authKey = await GetNewKey(username) ;
       return (              
@@ -72,53 +75,54 @@ function NewKeyPopUp({closePopupFunc}) {
   )
 }
 
-function ContractDataTable({apiKey, contractData, updateContractTable}) {
-  let contractTableRows = contractData["data"].map(element => (
+function ContractDataTable({apiKey, contractData, updateContractTable}: 
+  {apiKey: string, contractData: ResponseData<ContractData, null>, updateContractTable: () => void}) {
+  let contractTableRows = contractData.data?.map(element => (
     <tr className="contract-row" 
-      onClick={async () => {await AcceptContract(apiKey, element["id"]) ; updateContractTable()}}>
+      onClick={async () => {await AcceptContract(apiKey, element.id) ; updateContractTable()}}>
       <td>
-        {element["type"]}
+        {element.type}
       </td>
       <td>
-        {element["terms"]["payment"]["onAccepted"]}
+        {element.terms.payment.onAccepted}
       </td>
       <td>
-        {element["terms"]["payment"]["onFulfilled"]}
+        {element.terms.payment.onFulfilled}
       </td>
       <table className="subtable">
-        <tablebody>
+        <tbody>
             <tr>
               <th>Resource</th>
               <th>Destination</th>
               <th>Required Resource Count</th>
               <th>Fulfilled Resource Count</th>
             </tr>
-            {element["terms"]["deliver"].map(resource => 
+            {element.terms.deliver.map(resource => 
             <tr>
               <td>
-                {resource["tradeSymbol"]}
+                {resource.tradeSymbol}
               </td>
               <td>
-                {resource["destinationSymbol"]}
+                {resource.destinationSymbol}
               </td>
               <td>
-                {resource["unitsRequired"]}
+                {resource.unitsRequired}
               </td>
               <td>
-                {resource["unitsFulfilled"]}
+                {resource.unitsFulfilled}
               </td>
             </tr>
             )}
-          </tablebody>
+          </tbody>
       </table>
       <td>
-        {element["accepted"] ? "Yes" : "No"}
+        {element.accepted ? "Yes" : "No"}
       </td>
       <td>
-        {element["fulfilled"] ? "Yes" : "No"}
+        {element.fulfilled ? "Yes" : "No"}
       </td>
       <td>
-        {element["deadlineToAccept"]}
+        {element.deadlineToAccept}
       </td>
     </tr>)
   );
@@ -148,41 +152,44 @@ function LogInWithAuthKey() {
   // Todo: this is waaaaaay too much state to keep in one place.
   const [displayNewKeyPopup, setDisplayNewKeyPopup] = useState(false);
   const [apiKey, setApiKey] = useState("");
-  const [agentData, setAgentData] = useState(undefined);
-  const [systemWaypointData, setSystemWaypointData] = useState(undefined);
-  const [contractData, setContractData] = useState(undefined);
+  const [agentData, setAgentData]: [ResponseData<AgentData, null>, any] = useState({data: null});
+  const [systemWaypointData, setSystemWaypointData]: [Array<ResponseData<WaypointData, WaypointMetaData>>, any] = useState([]);
+  const [contractData, setContractData]: [ResponseData<ContractData, null>, any] = useState({data: null});
   const [agentRequestSent, setAgentRequestSent] = useState(false);
   const [agentDataError, setAgentDataError] = useState(false);
-  async function getAllData(apiKey) {
-    let agentDataResult;
+
+  async function getAllData(apiKey: string) {
+    let agentDataResult: ResponseData<AgentData, null> = {data: null};
     let errorFromRequest = false;
     try {
       agentDataResult = await GetAgentData(apiKey);
     }
     catch(err) {
-      agentDataResult = [];
+      agentDataResult =  {data: null};
       errorFromRequest = true;
     }
     setAgentData(agentDataResult);
 
-    let systemWaypointDataResult;
-    try {
-      systemWaypointDataResult = await GetSystemWaypointData(apiKey, agentDataResult['data']['headquarters']);
-    }
-    catch(err) {
-      // communicate to CoordinateMap that we couldn't find anything. It will automatically render a blank map.
-      // todo: Make CoordinateMap notify user that there was an error getting system data
-      systemWaypointDataResult = [];
-      errorFromRequest = true;
+    let systemWaypointDataResult: Array<ResponseData<WaypointData, WaypointMetaData>> = [];
+    if (agentDataResult.data) {
+      try {
+        systemWaypointDataResult = await GetSystemWaypointData(apiKey, agentDataResult.data.headquarters);
+      }
+      catch(err) {
+        // communicate to CoordinateMap that we couldn't find anything. It will automatically render a blank map.
+        // todo: Make CoordinateMap notify user that there was an error getting system data
+        systemWaypointDataResult = [];
+        errorFromRequest = true;
+      }
     }
     setSystemWaypointData(systemWaypointDataResult);
 
-    let contractDataResult;
+    let contractDataResult: ResponseData<ContractData, null> = {data: null};
     try {
       contractDataResult = await GetContractData(apiKey);
     }
     catch(err) {
-      contractDataResult = [];
+      contractDataResult = {data: null};
       errorFromRequest = true;
     }
     setContractData(contractDataResult);
@@ -254,8 +261,9 @@ function getPixelRatio(context) {
     return (window.devicePixelRatio || 1) / backingStore;
 }
 
-function CoordinateMap({systemWaypointPages, agentData}) {
-  let ref = useRef();
+function CoordinateMap({systemWaypointPages, agentData} : 
+  {systemWaypointPages: Array<ResponseData<WaypointData, WaypointMetaData>>, agentData: ResponseData<AgentData, null>}) {
+  let ref = useRef<HTMLCanvasElement>(null); // refs start being set to null?? and the type system works???
   const [zoom, setZoom] = useState(1);
   const [previousMouseLoc, setPreviousMouseLoc] = useState({x:0, y:0});
   const [offset, setOffset] = useState({x: 0, y: 0});
@@ -264,33 +272,41 @@ function CoordinateMap({systemWaypointPages, agentData}) {
   // todo: do we really need an effect here?
   useEffect(() => {
     let canvas = ref.current;
+    // No guarantee we actually get the canvas on the first render
+    if (!canvas) { return ;}
     let context = canvas.getContext('2d');
 
     let ratio = getPixelRatio(context);
-    let width = getComputedStyle(canvas)
+    let width = Number(getComputedStyle(canvas)
       .getPropertyValue('width')
-      .slice(0, -2);
+      .slice(0, -2));
      
-    let height = getComputedStyle(canvas)
+    let height = Number(getComputedStyle(canvas)
       .getPropertyValue('height')
-      .slice(0, -2);
+      .slice(0, -2));
 
     canvas.width = width*ratio;
     canvas.height = height*ratio;
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
 
-    let requestId;
+    let requestId: number;
     // blah
     function render() {
+      // I'm guessing there's some closure weirdness here that makes us
+      // have to run the canvas type assertion again
+      assert(canvas !== null, "Canvas is null");
+      assert(context !== null, "Context is null");
+      assert(agentData.data, "no agent data");
       context.clearRect(0, 0, canvas.width, canvas.height);
       for (const systemWaypointPage of systemWaypointPages)
       {
-        for (const waypoint of systemWaypointPage["data"].map(CreateWayPoint)){
+        assert(systemWaypointPage.data, "missing waypoint data");
+        for (const waypoint of systemWaypointPage.data.map(CreateWayPoint)){
           let x = (canvas.width / 2) + (waypoint.x + offset.x)*zoom;
           let y = (canvas.height / 2) + (waypoint.y + offset.y)*zoom;
           waypoint.render(context, x, y);
-          if (waypoint.symbol === agentData['data']['headquarters'])
+          if (waypoint.symbol === agentData.data.headquarters)
           {
             context.fillText("You are here", x+(10), y+(10));
           }
