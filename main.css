@@ -95,7 +95,6 @@ input {
     border: 1px solid black;
     border-collapse: collapse;
     font-size: 1vw;
-    margin: 10px 0 10px;
 }
 
 .main-table th {
@@ -105,11 +104,31 @@ input {
 .main-table th, td {
     border: 1px solid;
     border-collapse: collapse;
-    padding: 8px;
+    margin: 8px;
 }
 
-canvas {
+.element-table {
+    width: 40%
+}
+
+.c {
     outline: black 1px solid;
     height: 500px;
+    margin: 10px 0 10px
+}
+    
+
+.c.fully-expand  {
     width: 100%;
+}
+
+.c.partially-expand  {
+    width: 60%;
+    float: left;
+}
+
+.waypoint-data {
+    outline: black 1px solid;
+    width: 40%;
+    float: right;
 }

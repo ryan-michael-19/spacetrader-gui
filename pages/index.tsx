@@ -1,12 +1,13 @@
 // import { AssertionError } from 'assert';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Dispatch, SetStateAction } from 'react';
 import '../main.css';
 import { GetAgentData, GetSystemWaypointData, GetNewKey, 
           AcceptContract, GetContractData, ResponseData, 
           AgentData, ContractData, SingleWaypointData, 
           WaypointData, WaypointMetaData } from '../web_requests'
-import { CreateWayPoint } from '../map_objects'
+import { CreateWayPoint, Waypoint } from '../map_objects'
 import { assert } from "../utils"
+
 
 function AgentDataTable({ agentData }: { agentData: ResponseData<AgentData, null> }) {
   // TODO: Error handling when we get bad agentdata
@@ -152,9 +153,10 @@ function LogInWithAuthKey() {
   // Todo: this is waaaaaay too much state to keep in one place.
   const [displayNewKeyPopup, setDisplayNewKeyPopup] = useState(false);
   const [apiKey, setApiKey] = useState("");
+  // TODO: Clean these types up
   const [agentData, setAgentData]: [ResponseData<AgentData, null>, any] = useState({data: null});
-  const [systemWaypointData, setSystemWaypointData]: [Array<ResponseData<WaypointData, WaypointMetaData>>, any] = useState([]);
-  const [contractData, setContractData]: [ResponseData<ContractData, null>, any] = useState({data: null});
+  const [systemWaypointData, setSystemWaypointData] = useState<Array<ResponseData<WaypointData, WaypointMetaData>>>([]);
+  const [contractData, setContractData] = useState<ResponseData<ContractData, null>>({data: null});
   const [agentRequestSent, setAgentRequestSent] = useState(false);
   const [agentDataError, setAgentDataError] = useState(false);
 
@@ -200,7 +202,7 @@ function LogInWithAuthKey() {
 
   return(
   <>
-    <link rel="stylesheet" href="./main.css"/>
+    <link rel="stylesheet" type="text/css" href="./main.css"/>
     <h1>Welcome</h1>
     <div id="main-menu">
       <div id="login">
@@ -216,11 +218,10 @@ function LogInWithAuthKey() {
             <button id="get-new-key-popup" onClick={() => setDisplayNewKeyPopup(true)}>Get New Key</button>
           </>
         : agentRequestSent && ! agentDataError ?
-            <>
+          <>
             <AgentDataTable agentData={agentData}/>
             <CoordinateMap 
-              systemWaypointPages={systemWaypointData} agentData={agentData} // zoom={coordMapZoom}
-              // onWheel={(e) => coordMapZoom <= 1 ? setCoordMapZoom(1) : setCoordMapZoom(coordMapZoom+e.deltaY)}
+              systemWaypointPages={systemWaypointData} agentData={agentData} 
             />
             <ContractDataTable 
               apiKey={apiKey} contractData={contractData} 
@@ -261,13 +262,48 @@ function getPixelRatio(context) {
     return (window.devicePixelRatio || 1) / backingStore;
 }
 
-function CoordinateMap({systemWaypointPages, agentData} : 
+function CoordinateDataPane({setClickedWaypoint}:
+  {setClickedWaypoint: Dispatch<SetStateAction<null>>}) {
+  return (
+    <div className={"c waypoint-data"}>
+      <button onClick={() => setClickedWaypoint(null)}>Close</button>
+    </div>
+  );
+}
+
+function CoordinateMap({systemWaypointPages, agentData}:
   {systemWaypointPages: Array<ResponseData<WaypointData, WaypointMetaData>>, agentData: ResponseData<AgentData, null>}) {
+  const [clickedWaypoint, setClickedWaypoint] = useState<Waypoint|null>(null);
+  if (clickedWaypoint) { 
+    return (
+      <div>
+        <CoordinateCanvas systemWaypointPages={systemWaypointPages} agentData={agentData}
+                          setClickedWaypoint={setClickedWaypoint} fullyExpanded={false}/>
+        <CoordinateDataPane setClickedWaypoint={setClickedWaypoint}/>
+      </div>
+    );
+  } else { // waypoint is not clicked on/ has been closed
+    return (
+      <CoordinateCanvas systemWaypointPages={systemWaypointPages} agentData={agentData} 
+                        setClickedWaypoint={setClickedWaypoint} fullyExpanded={true}/>
+    );
+  }
+}
+
+function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoint, fullyExpanded} : 
+  {systemWaypointPages: Array<ResponseData<WaypointData, WaypointMetaData>>, 
+    agentData: ResponseData<AgentData, null>,
+    setClickedWaypoint: Dispatch<SetStateAction<Waypoint>>,
+    fullyExpanded: boolean}) {
   let ref = useRef<HTMLCanvasElement>(null); // refs start being set to null?? and the type system works???
   const [zoom, setZoom] = useState(1);
   const [previousMouseLoc, setPreviousMouseLoc] = useState({x:0, y:0});
   const [offset, setOffset] = useState({x: 0, y: 0});
+  const [mouseClickedCoordinates, setMouseClickedCoordinates] = useState<{x:number, y:number}>();
+  const [clickMustBeProcessed, setClickMustBeProcessed] = useState(false);
   let [mouseIsDown, setMouseIsDown] = useState(false);
+  let [mouseWasDragged, setMouseWasDragged] = useState(false);
+
 
   // todo: do we really need an effect here?
   useEffect(() => {
@@ -287,8 +323,8 @@ function CoordinateMap({systemWaypointPages, agentData} :
 
     canvas.width = width*ratio;
     canvas.height = height*ratio;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
+    // canvas.style.width = `${width}px`;
+    // canvas.style.height = `${height}px`;
 
     let requestId: number;
     // blah
@@ -303,12 +339,31 @@ function CoordinateMap({systemWaypointPages, agentData} :
       {
         assert(systemWaypointPage.data, "missing waypoint data");
         for (const waypoint of systemWaypointPage.data.map(CreateWayPoint)){
-          let x = (canvas.width / 2) + (waypoint.x + offset.x)*zoom;
-          let y = (canvas.height / 2) + (waypoint.y + offset.y)*zoom;
-          waypoint.render(context, x, y);
+          const canvasAbsoluteX = (canvas.width / 2) + (waypoint.x + offset.x)*zoom;
+          const canvasAbsoluteY = (canvas.height / 2) + (waypoint.y + offset.y)*zoom;
+          if ((!mouseIsDown) && clickMustBeProcessed)
+          {
+            assert(typeof mouseClickedCoordinates !== 'undefined', 'mouse clicked coordinates is undefined');
+            // Get mouse coordinates in terms of the canvas
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const mouseRelativeToCanvasX = mouseClickedCoordinates.x * scaleX - rect.x;
+            const mouseRelativeToCanvasY = mouseClickedCoordinates.y * scaleY - rect.y;
+            // radial bounds check.
+            // check if the distance between the waypoint and the mouse is less than the size of the waypoint
+            const distanceSquared = (canvasAbsoluteX - mouseRelativeToCanvasX) ** 2 
+                                  + (canvasAbsoluteY - mouseRelativeToCanvasY) ** 2;
+            if (distanceSquared < (waypoint.size+4) ** 2)
+            {
+              setClickedWaypoint(waypoint); // register click
+            }
+            setClickMustBeProcessed(false);
+          }
+          waypoint.render(context, canvasAbsoluteX, canvasAbsoluteY);
           if (waypoint.symbol === agentData.data.headquarters)
           {
-            context.fillText("You are here", x+(10), y+(10));
+            context.fillText("You are here", canvasAbsoluteX+(10), canvasAbsoluteY+(10));
           }
         }
       }
@@ -324,6 +379,7 @@ function CoordinateMap({systemWaypointPages, agentData} :
   return (
     <canvas
       ref={ref}
+      className={`c ${fullyExpanded ? "fully-expand": "partially-expand"}`}
       // Todo: put lambdas somewhere more organized
       // zoom in and out with mousewheel
       onWheel={e => {
@@ -343,7 +399,12 @@ function CoordinateMap({systemWaypointPages, agentData} :
         setPreviousMouseLoc({x: e.pageX, y: e.pageY});
       }}
       onMouseUp={e => {
+        setMouseClickedCoordinates({x: e.pageX, y: e.pageY});
+        if (!mouseWasDragged) {
+          setClickMustBeProcessed(true);
+        }
         setMouseIsDown(false);
+        setMouseWasDragged(false);
       }}
       onMouseMove={e => {
         if (mouseIsDown) {
@@ -354,11 +415,12 @@ function CoordinateMap({systemWaypointPages, agentData} :
             // Click!
           } else {
             // drag
-            const setNewOffset = (coord, diff) => {
+            const calcNewOffset = (coord: number, diff: number) => {
               return coord+(diff/zoom);
             };
-            let newOffset = {x: setNewOffset(offset.x, diffX), y: setNewOffset(offset.y, diffY)};
+            let newOffset = {x: calcNewOffset(offset.x, diffX), y: calcNewOffset(offset.y, diffY)};
             setOffset(newOffset);
+            setMouseWasDragged(true);
             setPreviousMouseLoc({x: e.pageX, y: e.pageY});
           }
         }

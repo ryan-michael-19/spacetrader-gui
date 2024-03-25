@@ -34,6 +34,7 @@ export function CreateWayPoint(requestData: SingleWaypointData){
 
 // todo: create an interface to force all subclasses to have a render method
 export class Waypoint {
+    // These should all be assigned via the constructor
     size: number;
     traits: any;
     symbol: string;
