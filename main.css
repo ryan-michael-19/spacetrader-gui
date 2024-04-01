@@ -74,6 +74,12 @@ input {
 
 }
 
+.close-table {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+}
+
 .contract-row:hover {
     background-color: lightgray;
 }
@@ -89,26 +95,31 @@ input {
     border: 1px solid white;
 }
 
-.main-table {
+.general-table {
     position: relative;
     width: 100%;
     border: 1px solid black;
     border-collapse: collapse;
     font-size: 1vw;
+    max-height: 100%
 }
 
-.main-table th {
+.general-table th {
     text-align: left;
 }
 
-.main-table th, td {
+caption {
+    text-align: center;
+    width: 100%;
+    font-weight: bolder;
+    padding: 10px;
+}
+
+.general-table th, td {
     border: 1px solid;
     border-collapse: collapse;
     margin: 8px;
-}
-
-.element-table {
-    width: 40%
+    padding: 5px;
 }
 
 .c {
@@ -131,4 +142,11 @@ input {
     outline: black 1px solid;
     width: 40%;
     float: right;
+    position: relative;
+    font-size: 0.9vw;
+}
+
+.description-text {
+    font-size: 75%;
+    padding: 1%;
 }

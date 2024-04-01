@@ -13,7 +13,7 @@ function AgentDataTable({ agentData }: { agentData: ResponseData<AgentData, null
   // TODO: Error handling when we get bad agentdata
   return (
     <>
-    <table className="main-table">
+    <table className="general-table">
       <tbody>
       <tr>
         <th>Account ID</th>
@@ -129,7 +129,7 @@ function ContractDataTable({apiKey, contractData, updateContractTable}:
   );
   return (
     <>
-      <table className="main-table">
+      <table className="general-table">
         <tbody>
           <tr>
             <th>Type</th>
@@ -262,11 +262,34 @@ function getPixelRatio(context) {
     return (window.devicePixelRatio || 1) / backingStore;
 }
 
-function CoordinateDataPane({setClickedWaypoint}:
-  {setClickedWaypoint: Dispatch<SetStateAction<null>>}) {
+function WaypointDataPane({setClickedWaypoint, currentWaypoint}:
+  {setClickedWaypoint: Dispatch<SetStateAction<null>>, currentWaypoint: Waypoint}) {
   return (
     <div className={"c waypoint-data"}>
-      <button onClick={() => setClickedWaypoint(null)}>Close</button>
+      <table className={"general-table"}>
+        <caption>
+          {`${currentWaypoint.symbol}: ${currentWaypoint.type.replace("_", " ")}: belongs to ${currentWaypoint.faction.symbol}`}
+        </caption>
+        <tbody>
+          <tr>
+            <th>Trait Name</th>
+            <th>Trait Description</th>
+          </tr>
+          {
+            currentWaypoint.traits.map(t => {return(
+              <tr>
+                <td>
+                  {t.name}
+                </td>
+                <td className={"description-text"}>
+                  {t.description}
+                </td>
+              </tr>
+            )})
+          }
+        </tbody>
+      </table>
+      <button className={"close-table"} onClick={() => setClickedWaypoint(null)}>Close</button>
     </div>
   );
 }
@@ -278,22 +301,23 @@ function CoordinateMap({systemWaypointPages, agentData}:
     return (
       <div>
         <CoordinateCanvas systemWaypointPages={systemWaypointPages} agentData={agentData}
-                          setClickedWaypoint={setClickedWaypoint} fullyExpanded={false}/>
-        <CoordinateDataPane setClickedWaypoint={setClickedWaypoint}/>
+                          setClickedWaypoint={setClickedWaypoint} clickedWaypoint={clickedWaypoint} fullyExpanded={false}/>
+        <WaypointDataPane setClickedWaypoint={setClickedWaypoint} currentWaypoint={clickedWaypoint}/>
       </div>
     );
   } else { // waypoint is not clicked on/ has been closed
     return (
       <CoordinateCanvas systemWaypointPages={systemWaypointPages} agentData={agentData} 
-                        setClickedWaypoint={setClickedWaypoint} fullyExpanded={true}/>
+                        setClickedWaypoint={setClickedWaypoint} clickedWaypoint={clickedWaypoint} fullyExpanded={true}/>
     );
   }
 }
 
-function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoint, fullyExpanded} : 
+function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoint, clickedWaypoint, fullyExpanded} : 
   {systemWaypointPages: Array<ResponseData<WaypointData, WaypointMetaData>>, 
     agentData: ResponseData<AgentData, null>,
     setClickedWaypoint: Dispatch<SetStateAction<Waypoint>>,
+    clickedWaypoint: Waypoint|null,
     fullyExpanded: boolean}) {
   let ref = useRef<HTMLCanvasElement>(null); // refs start being set to null?? and the type system works???
   const [zoom, setZoom] = useState(1);
@@ -366,6 +390,11 @@ function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoint, f
             context.fillText("You are here", canvasAbsoluteX+(10), canvasAbsoluteY+(10));
           }
         }
+      }
+      if (clickedWaypoint) {
+        const selectedWaypointAbsoluteX = (canvas.width / 2) + (clickedWaypoint.x + offset.x)*zoom;
+        const selectedWaypointAbsoluteY = (canvas.height / 2) + (clickedWaypoint.y + offset.y)*zoom;
+        clickedWaypoint.renderSelectedCircle(context, selectedWaypointAbsoluteX, selectedWaypointAbsoluteY);
       }
       requestId = requestAnimationFrame(render);
     }

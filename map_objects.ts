@@ -36,8 +36,10 @@ export function CreateWayPoint(requestData: SingleWaypointData){
 export class Waypoint {
     // These should all be assigned via the constructor
     size: number;
-    traits: any;
+    traits: Array<{symbol: string, name: string, description: string}>;
     symbol: string;
+    type: string;
+    faction: {symbol: string};
     x: number;
     y: number;
     // ALL WAYPOINTS MUST DEFINE this.size !!!!
@@ -53,8 +55,8 @@ export class Waypoint {
         }
     }
 
-    render(context, x, y) {
-        let color;
+    render(context, x: number, y: number) {
+        let color: string;
         if (this.traits.map(t=>t.symbol).includes("SHIPYARD")) {
             color = "red";
         } else {
@@ -72,6 +74,19 @@ export class Waypoint {
         );
         context.fill();
     };
+
+    renderSelectedCircle(context, x: number, y: number) {
+        context.fillStyle = "black";
+        context.beginPath();
+        context.arc(
+            x,
+            y,
+            this.size+10,
+            0,
+            2 * Math.PI
+        );
+        context.stroke();
+    }
 }
 
 class Planet extends Waypoint {
