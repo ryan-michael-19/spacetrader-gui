@@ -76,11 +76,11 @@ input {
 
 .close-table {
     position: absolute;
-    bottom: 5px;
-    right: 5px;
+    bottom: 3px;
+    right: 20px;
 }
 
-.contract-row:hover {
+.selectable-row:hover {
     background-color: lightgray;
 }
 
@@ -101,7 +101,7 @@ input {
     border: 1px solid black;
     border-collapse: collapse;
     font-size: 1vw;
-    max-height: 100%
+    max-height: 100%;
 }
 
 .general-table th {
@@ -149,4 +149,11 @@ caption {
 .description-text {
     font-size: 75%;
     padding: 1%;
+}
+
+.scrollable {
+    width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden
 }

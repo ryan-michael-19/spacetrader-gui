@@ -79,7 +79,7 @@ function NewKeyPopUp({closePopupFunc}: {closePopupFunc: () => void}) {
 function ContractDataTable({apiKey, contractData, updateContractTable}: 
   {apiKey: string, contractData: ResponseData<ContractData, null>, updateContractTable: () => void}) {
   let contractTableRows = contractData.data?.map(element => (
-    <tr className="contract-row" 
+    <tr className="selectable-row" 
       onClick={async () => {await AcceptContract(apiKey, element.id) ; updateContractTable()}}>
       <td>
         {element.type}
@@ -266,29 +266,35 @@ function WaypointDataPane({setClickedWaypoint, currentWaypoint}:
   {setClickedWaypoint: Dispatch<SetStateAction<null>>, currentWaypoint: Waypoint}) {
   return (
     <div className={"c waypoint-data"}>
-      <table className={"general-table"}>
-        <caption>
-          {`${currentWaypoint.symbol}: ${currentWaypoint.type.replace("_", " ")}: belongs to ${currentWaypoint.faction.symbol}`}
-        </caption>
-        <tbody>
-          <tr>
-            <th>Trait Name</th>
-            <th>Trait Description</th>
-          </tr>
-          {
-            currentWaypoint.traits.map(t => {return(
-              <tr>
-                <td>
-                  {t.name}
-                </td>
-                <td className={"description-text"}>
-                  {t.description}
-                </td>
-              </tr>
-            )})
-          }
-        </tbody>
-      </table>
+      <div className={"scrollable"}>
+        <table className={"general-table"}>
+          <caption>
+            {`${currentWaypoint.symbol}: ${currentWaypoint.type.replace("_", " ")}: belongs to ${currentWaypoint.faction.symbol}`}
+          </caption>
+          <tbody>
+            <tr>
+              <th>Trait Name</th>
+              <th>Trait Description</th>
+              <th>Trait Action</th>
+            </tr>
+            {
+              currentWaypoint.traits.map(t => {return(
+                <tr className="selectable-row">
+                  <td>
+                    {t.name}
+                  </td>
+                  <td className={"description-text"}>
+                    {t.description}
+                  </td>
+                  <td>
+                    {t.symbol === "SHIPYARD" ? "Browse ships" : "N/A"}
+                  </td>
+                </tr>
+              )})
+            }
+          </tbody>
+        </table>
+      </div>
       <button className={"close-table"} onClick={() => setClickedWaypoint(null)}>Close</button>
     </div>
   );
