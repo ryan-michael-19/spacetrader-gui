@@ -53,6 +53,15 @@ export type SingleWaypointData = {
 
 export type WaypointData = Array<SingleWaypointData>
 
+export type ShipData = {
+    type: string
+    name: string
+    description: string
+    supply: string
+    activity: string
+    purchasePrice: string
+}
+
 
 export async function GetAgentData(apiKey: string): Promise<ResponseData<AgentData, null>> {
   let response = await fetch(
@@ -175,4 +184,25 @@ export async function GetContractData(apiKey: string): Promise<ResponseData<Cont
   else {
     throw new Error(`Response: ${response.status}`);
   }
+}
+
+export async function GetAvailableShips(apiKey: string, currentSystem: string, shipyardWaypoint: string) {
+    let response = await fetch(
+        `https://api.spacetraders.io/v2/systems/${currentSystem}/waypoints/${shipyardWaypoint}/shipyard`,{
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        }
+    });
+    if (response.status === 200) {
+        const resData = await response.json();
+        // dirty hack because I screwed the types up :)
+        const parsedResData: ResponseData<Array<ShipData>, null> = {data: resData.data.ships} ;
+        return parsedResData;
+    }
+    else {
+        throw new Error(`Response: ${response.status}`);
+    }
 }

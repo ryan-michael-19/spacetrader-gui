@@ -54,9 +54,12 @@ export class Waypoint {
             return this;
         }
     }
-
-    render(context, x: number, y: number) {
-        let color: string;
+    // todo: split update coords and render into two different functions?
+    // they're two different operations, but having two functions that *must*
+    // be run right after another is bad practice.
+    // render({context, absoluteCoords, offsetCoords, canvasSize, zoomFactor}) {
+    render(context, x, y) {
+        let color;
         if (this.traits.map(t=>t.symbol).includes("SHIPYARD")) {
             color = "red";
         } else {

@@ -28,41 +28,44 @@ input {
     color: #AAAAAA;
 }
 
-#new-key-popup {
+.popup {
     position: absolute;
     top: 50vh;
     left: 50vw;
     background-color: #222222; 
     text-align: center;
     justify-content: center;
-    width: 500px; 
-    height: 300px; 
+    width: 600px; 
+    height: 400px; 
     border-radius: 20px;
     word-wrap: break-word;
     transform: translate(-50%, -50%);
+    color: #888888;
 }
 
 #save-token-warning {
     margin-top: 10px;
     color: #666666;
 }
-#new-key-popup p.wrappable {
+.popup p.wrappable {
     overflow-y: scroll;
     height: 60px;
 }
 
-#new-key-popup label {
+.popup label {
     color: #888888;
 }
 
-#new-key-popup input {
+.popup input {
     /* margin-top: 0px; */
     width: 50%
 }
 
-#new-key-popup button {
+.popup button {
     margin-top: 20px;
+    margin-bottom: 10px;
 }
+
 
 #login {
     display: flex;
@@ -106,6 +109,13 @@ input {
 
 .general-table th {
     text-align: left;
+}
+
+.popup-table {
+    overflow: scroll;
+    width: 95%;
+    margin: 10px;
+    font-size: 90%;
 }
 
 caption {
@@ -156,4 +166,12 @@ caption {
     max-height: 100%;
     overflow-y: auto;
     overflow-x: hidden
+}
+
+.full-canvas {
+    width: 100%;
+}
+
+.partial-canvas {
+    width: 60%;
 }

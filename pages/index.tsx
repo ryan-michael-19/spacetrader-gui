@@ -4,7 +4,7 @@ import '../main.css';
 import { GetAgentData, GetSystemWaypointData, GetNewKey, 
           AcceptContract, GetContractData, ResponseData, 
           AgentData, ContractData, SingleWaypointData, 
-          WaypointData, WaypointMetaData } from '../web_requests'
+          WaypointData, WaypointMetaData, GetAvailableShips, ShipData } from '../web_requests'
 import { CreateWayPoint, Waypoint } from '../map_objects'
 import { assert } from "../utils"
 
@@ -58,7 +58,7 @@ function NewKeyPopUp({closePopupFunc}: {closePopupFunc: () => void}) {
     }
   }
   return (
-    <div id="new-key-popup">
+    <div className="popup">
       <div className="center">
         <label htmlFor="new-user-name">Enter a username:</label>
         <input id="new-user-name" type="text" onChange={e => setUserName(e.target.value)}/>
@@ -221,7 +221,7 @@ function LogInWithAuthKey() {
           <>
             <AgentDataTable agentData={agentData}/>
             <CoordinateMap 
-              systemWaypointPages={systemWaypointData} agentData={agentData} 
+              systemWaypointPages={systemWaypointData} agentData={agentData} apiKey={apiKey}
             />
             <ContractDataTable 
               apiKey={apiKey} contractData={contractData} 
@@ -262,14 +262,18 @@ function getPixelRatio(context) {
     return (window.devicePixelRatio || 1) / backingStore;
 }
 
-function WaypointDataPane({setClickedWaypoint, currentWaypoint}:
-  {setClickedWaypoint: Dispatch<SetStateAction<null>>, currentWaypoint: Waypoint}) {
+function WaypointDataPane({setClickedWaypoint, clickedWaypoint, setShipData, agentData, apiKey }:
+  {setClickedWaypoint: Dispatch<SetStateAction<null>>,
+    clickedWaypoint: Waypoint, 
+    setShipData: Dispatch<SetStateAction<Array<ShipData>|null>>,
+    agentData: ResponseData<AgentData, null>,
+    apiKey: string}) {
   return (
     <div className={"c waypoint-data"}>
       <div className={"scrollable"}>
         <table className={"general-table"}>
           <caption>
-            {`${currentWaypoint.symbol}: ${currentWaypoint.type.replace("_", " ")}: belongs to ${currentWaypoint.faction.symbol}`}
+            {`${clickedWaypoint.symbol}: ${clickedWaypoint.type.replace("_", " ")}: belongs to ${clickedWaypoint.faction.symbol}`}
           </caption>
           <tbody>
             <tr>
@@ -278,7 +282,7 @@ function WaypointDataPane({setClickedWaypoint, currentWaypoint}:
               <th>Trait Action</th>
             </tr>
             {
-              currentWaypoint.traits.map(t => {return(
+              clickedWaypoint.traits.map(t => {return(
                 <tr className="selectable-row">
                   <td>
                     {t.name}
@@ -286,7 +290,15 @@ function WaypointDataPane({setClickedWaypoint, currentWaypoint}:
                   <td className={"description-text"}>
                     {t.description}
                   </td>
-                  <td>
+                  <td onClick={t.symbol === "SHIPYARD" ? 
+                                async () => {
+                                  assert(agentData.data, "agent data does not exist");
+                                  setShipData((await GetAvailableShips(
+                                    apiKey, agentData.data.headquarters.split("-").slice(0,2).join("-"), 
+                                    clickedWaypoint.symbol
+                                  )).data)
+                                 }
+                                : () => null}>
                     {t.symbol === "SHIPYARD" ? "Browse ships" : "N/A"}
                   </td>
                 </tr>
@@ -300,24 +312,97 @@ function WaypointDataPane({setClickedWaypoint, currentWaypoint}:
   );
 }
 
-function CoordinateMap({systemWaypointPages, agentData}:
-  {systemWaypointPages: Array<ResponseData<WaypointData, WaypointMetaData>>, agentData: ResponseData<AgentData, null>}) {
+function ViewShipPopup({shipData, setShipData}: {
+    shipData: Array<ShipData>|null|undefined,
+    setShipData: Dispatch<SetStateAction<Array<ShipData> | null>>,
+  }) {
+
+  function ShipDataIfExists() {
+    if (shipData) {
+      return (
+        <>
+          <tr className="popup-table ">
+            <th>Type</th> 
+            <th>Name</th>
+            <th>Description</th>
+            <th>Supply</th>
+            <th>Activity</th>
+            <th>Price</th>
+          </tr>
+          {shipData.map(ship =>(
+            <tr>
+              <td>
+                {ship.type}
+              </td>
+              <td>
+                {ship.name}
+              </td>
+              <td>
+                {ship.description}
+              </td>
+              <td>
+                {ship.supply}
+              </td>
+              <td>
+                {ship.activity}
+              </td>
+              <td>
+                {ship.purchasePrice}
+              </td>
+            </tr>
+            ))
+          }
+        </>
+        );
+    } else {
+      return <tr className="popup-table"><th className="popup-table">No ship data</th></tr>;
+    }
+  }
+
+  return (
+  <div className="popup">
+    <div className="scrollable">
+    <table className="general-table popup-table">
+      <ShipDataIfExists/>
+    </table>
+    <button onClick={() => setShipData(null)}>
+      Close
+    </button>
+    </div> 
+    </div>)
+}
+
+function CoordinateMap({systemWaypointPages, agentData, apiKey}:
+  {systemWaypointPages: Array<ResponseData<WaypointData, WaypointMetaData>>, 
+    agentData: ResponseData<AgentData, null>,
+    apiKey: string}
+  ){
   const [clickedWaypoint, setClickedWaypoint] = useState<Waypoint|null>(null);
+  const [shipData, setShipData] = useState<Array<ShipData>|null|undefined>(null);
+  
   if (clickedWaypoint) { 
     return (
-      <div>
+      <>
         <CoordinateCanvas systemWaypointPages={systemWaypointPages} agentData={agentData}
                           setClickedWaypoint={setClickedWaypoint} clickedWaypoint={clickedWaypoint} fullyExpanded={false}/>
-        <WaypointDataPane setClickedWaypoint={setClickedWaypoint} currentWaypoint={clickedWaypoint}/>
-      </div>
+        <WaypointDataPane setClickedWaypoint={setClickedWaypoint} clickedWaypoint={clickedWaypoint} apiKey={apiKey}
+                          setShipData={setShipData} agentData={agentData}/>
+        {
+          // if we manually set shipData to null we want the popup to close. If it was set to undefined from the webrequest
+          // we want to tell the user we couldn't get any data. There's a good chance this is going to bite me in the ass
+          // in the next few weeks :)
+          shipData !== null ? <ViewShipPopup shipData={shipData} setShipData={setShipData}/> : null
+        }
+      </>
     );
   } else { // waypoint is not clicked on/ has been closed
     return (
       <CoordinateCanvas systemWaypointPages={systemWaypointPages} agentData={agentData} 
                         setClickedWaypoint={setClickedWaypoint} clickedWaypoint={clickedWaypoint} fullyExpanded={true}/>
-    );
+    )
   }
 }
+
 
 function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoint, clickedWaypoint, fullyExpanded} : 
   {systemWaypointPages: Array<ResponseData<WaypointData, WaypointMetaData>>, 
