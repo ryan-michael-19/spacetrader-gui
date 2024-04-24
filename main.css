@@ -35,8 +35,8 @@ input {
     background-color: #222222; 
     text-align: center;
     justify-content: center;
-    width: 600px; 
-    height: 400px; 
+    width: 700px; 
+    height: 450px; 
     border-radius: 20px;
     word-wrap: break-word;
     transform: translate(-50%, -50%);
@@ -62,7 +62,7 @@ input {
 }
 
 .popup button {
-    margin-top: 20px;
+    margin-top: 10px;
     margin-bottom: 10px;
 }
 
@@ -112,10 +112,12 @@ input {
 }
 
 .popup-table {
-    overflow: scroll;
-    width: 95%;
-    margin: 10px;
-    font-size: 90%;
+    overflow-y: scroll;
+    width: 50%;
+    margin-top: 10px;
+    margin-right: auto;
+    margin-left: auto;
+    font-size: 85%;
 }
 
 caption {
