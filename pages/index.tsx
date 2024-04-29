@@ -283,14 +283,8 @@ function WaypointDataPane({setClickedWaypoint, clickedWaypoint, setShipData, age
             </tr>
             {
               [...clickedWaypoint.traits.entries()].map(([traitNum, t]) => {return(
-                <tr className="selectable-row" key={traitNum}>
-                  <td>
-                    {t.name}
-                  </td>
-                  <td className={"description-text"}>
-                    {t.description}
-                  </td>
-                  <td onClick={t.symbol === "SHIPYARD" ? 
+                <tr className="selectable-row" key={traitNum}
+                    onClick={t.symbol === "SHIPYARD" ? 
                                 async () => {
                                   assert(agentData.data, "agent data does not exist");
                                   setShipData((await GetAvailableShips(
@@ -299,6 +293,13 @@ function WaypointDataPane({setClickedWaypoint, clickedWaypoint, setShipData, age
                                   )).data)
                                  }
                                 : () => null}>
+                  <td>
+                    {t.name}
+                  </td>
+                  <td className={"description-text"}>
+                    {t.description}
+                  </td>
+                  <td>
                     {t.symbol === "SHIPYARD" ? "Browse ships" : "N/A"}
                   </td>
                 </tr>
