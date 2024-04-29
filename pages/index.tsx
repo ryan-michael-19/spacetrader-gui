@@ -451,14 +451,12 @@ function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoint, c
       assert(context !== null, "Context is null");
       assert(agentData.data, "no agent data");
       context.clearRect(0, 0, canvas.width, canvas.height);
-      for (const systemWaypointPage of systemWaypointPages)
-      {
+      for (const systemWaypointPage of systemWaypointPages) {
         assert(systemWaypointPage.data, "missing waypoint data");
         for (const waypoint of systemWaypointPage.data.map(CreateWayPoint)){
           const canvasAbsoluteX = (canvas.width / 2) + (waypoint.x + offset.x)*zoom;
           const canvasAbsoluteY = (canvas.height / 2) + (waypoint.y + offset.y)*zoom;
-          if ((!mouseIsDown) && clickMustBeProcessed)
-          {
+          if ((!mouseIsDown) && clickMustBeProcessed) {
             assert(typeof mouseClickedCoordinates !== 'undefined', 'mouse clicked coordinates is undefined');
             // Get mouse coordinates in terms of the canvas
             const rect = canvas.getBoundingClientRect();
@@ -470,15 +468,13 @@ function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoint, c
             // check if the distance between the waypoint and the mouse is less than the size of the waypoint
             const distanceSquared = (canvasAbsoluteX - mouseRelativeToCanvasX) ** 2 
                                   + (canvasAbsoluteY - mouseRelativeToCanvasY) ** 2;
-            if (distanceSquared < (waypoint.size+4) ** 2)
-            {
+            if (distanceSquared < (waypoint.size+4) ** 2) {
               setClickedWaypoint(waypoint); // register click
             }
             setClickMustBeProcessed(false);
           }
           waypoint.render(context, canvasAbsoluteX, canvasAbsoluteY);
-          if (waypoint.symbol === agentData.data.headquarters)
-          {
+          if (waypoint.symbol === agentData.data.headquarters) {
             context.fillText("You are here", canvasAbsoluteX+(10), canvasAbsoluteY+(10));
           }
         }
