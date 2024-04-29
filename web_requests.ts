@@ -1,4 +1,3 @@
-import { Waypoint } from './map_objects';
 import { assert } from './utils';
 
 export type ResponseData<ResponseType, ResponseMetaType> = {
@@ -64,7 +63,7 @@ export type ShipData = {
 
 
 export async function GetAgentData(apiKey: string): Promise<ResponseData<AgentData, null>> {
-  let response = await fetch(
+  const response = await fetch(
       'https://api.spacetraders.io/v2/my/agent',{
       method: 'GET',
       headers: {
@@ -74,7 +73,7 @@ export async function GetAgentData(apiKey: string): Promise<ResponseData<AgentDa
       }
   });
   if (response.status === 200) {
-    let resData: ResponseData<AgentData, null> = await response.json();
+    const resData: ResponseData<AgentData, null> = await response.json();
     return resData;
   }
   else {
@@ -86,12 +85,12 @@ export async function GetSystemWaypointData(apiKey: string, headquarters: string
   const pageLimit = 20;
   async function requestWaypointPage(
     apiKey: string, headquarters: string, pageNumber: number): Promise<ResponseData<WaypointData, WaypointMetaData>> {
-    let queryParams = new URLSearchParams({
+    const queryParams = new URLSearchParams({
           limit: pageLimit.toString(),
           page: pageNumber.toString()
     });
-    let [sector, system, waypoint] = headquarters.split("-");
-    let response = await fetch(
+    const [sector, system, _] = headquarters.split("-");
+    const response = await fetch(
         `https://api.spacetraders.io/v2/systems/${sector}-${system}/waypoints?`+queryParams, {
         method: 'GET',
         headers: {
@@ -101,7 +100,7 @@ export async function GetSystemWaypointData(apiKey: string, headquarters: string
         }
     });
     if (response.status === 200) {
-        let resData: ResponseData<WaypointData, WaypointMetaData> = await response.json();
+        const resData: ResponseData<WaypointData, WaypointMetaData> = await response.json();
         return resData;
     }
     else {
@@ -109,12 +108,12 @@ export async function GetSystemWaypointData(apiKey: string, headquarters: string
     }
   }
 
-  let firstPage = await requestWaypointPage(apiKey, headquarters, 1);
+  const firstPage = await requestWaypointPage(apiKey, headquarters, 1);
   assert(firstPage.meta, "could not get metadata");
   // todo: re add this if we get 429s
   // await new Promise(r => setTimeout(r, 600));
-  let totalPages = Math.ceil(firstPage.meta.total / pageLimit);
-  let allPages = [firstPage];
+  const totalPages = Math.ceil(firstPage.meta.total / pageLimit);
+  const allPages = [firstPage];
   // note i is set to 2 since we already have the first page
   for (let i = 2; i <= totalPages; i++)
   {
@@ -130,7 +129,7 @@ export async function GetNewKey(username: string): Promise<string> {
         message = "Error: Username must be less than 14 characters.";
     }
     else {
-        let response = await fetch(
+        const response = await fetch(
             'https://api.spacetraders.io/v2/register',{
             method: 'POST',
             headers: {
@@ -143,7 +142,7 @@ export async function GetNewKey(username: string): Promise<string> {
             })
         });
         if (response.status === 201) {
-            let res_data = await response.json();
+            const res_data = await response.json();
             message = res_data["data"]["token"];
         }
         else {
@@ -155,7 +154,7 @@ export async function GetNewKey(username: string): Promise<string> {
 
 // TODO: Type annotate return
 export async function AcceptContract(apiKey: string, contractID: string) {
-    let response = await fetch(
+    const response = await fetch(
         `https://api.spacetraders.io/v2/my/contracts/${contractID}/accept`,{
         method: 'POST',
         headers: {
@@ -168,7 +167,7 @@ export async function AcceptContract(apiKey: string, contractID: string) {
 }
 
 export async function GetContractData(apiKey: string): Promise<ResponseData<ContractData, null>> {
-  let response = await fetch(
+  const response = await fetch(
       'https://api.spacetraders.io/v2/my/contracts/',{
       method: 'GET',
       headers: {
@@ -178,7 +177,7 @@ export async function GetContractData(apiKey: string): Promise<ResponseData<Cont
       }
   });
   if (response.status === 200) {
-      let resData: ResponseData<ContractData, null> = await response.json();
+      const resData: ResponseData<ContractData, null> = await response.json();
       return resData;
   }
   else {
@@ -187,7 +186,7 @@ export async function GetContractData(apiKey: string): Promise<ResponseData<Cont
 }
 
 export async function GetAvailableShips(apiKey: string, currentSystem: string, shipyardWaypoint: string) {
-    let response = await fetch(
+    const response = await fetch(
         `https://api.spacetraders.io/v2/systems/${currentSystem}/waypoints/${shipyardWaypoint}/shipyard`,{
         method: 'GET',
         headers: {

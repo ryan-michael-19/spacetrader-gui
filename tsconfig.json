@@ -22,7 +22,8 @@
         "name": "next"
       }
     ],
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "target":"ES6"
   },
   "include": [
     "next-env.d.ts",

@@ -1,9 +1,8 @@
-// import { AssertionError } from 'assert';
-import { useState, useRef, useEffect, Dispatch, SetStateAction } from 'react';
+import React, { useState, useRef, useEffect, Dispatch, SetStateAction } from 'react';
 import '../main.css';
 import { GetAgentData, GetSystemWaypointData, GetNewKey, 
           AcceptContract, GetContractData, ResponseData, 
-          AgentData, ContractData, SingleWaypointData, 
+          AgentData, ContractData, 
           WaypointData, WaypointMetaData, GetAvailableShips, ShipData } from '../web_requests'
 import { CreateWayPoint, Waypoint } from '../map_objects'
 import { assert } from "../utils"
@@ -38,7 +37,7 @@ function NewKeyPopUp({closePopupFunc}: {closePopupFunc: () => void}) {
   const [authKeyComponentData, setAuthKeyComponentData] = useState(<></>);
   async function getAuthKeyComponentData(username: string){
     try {
-      let authKey = await GetNewKey(username) ;
+      const authKey = await GetNewKey(username) ;
       return (              
         <>
           <p id="save-token-warning">
@@ -78,8 +77,9 @@ function NewKeyPopUp({closePopupFunc}: {closePopupFunc: () => void}) {
 
 function ContractDataTable({apiKey, contractData, updateContractTable}: 
   {apiKey: string, contractData: ResponseData<ContractData, null>, updateContractTable: () => void}) {
-  let contractTableRows = contractData.data?.map(element => (
-    <tr className="selectable-row" 
+  assert(contractData.data !== null, "contractData is null");
+  const contractTableRows = [...contractData.data.entries()].map(([elementNumber, element]) => (
+    <tr className="selectable-row" key={elementNumber}
       onClick={async () => {await AcceptContract(apiKey, element.id) ; updateContractTable()}}>
       <td>
         {element.type}
@@ -98,8 +98,8 @@ function ContractDataTable({apiKey, contractData, updateContractTable}:
               <th>Required Resource Count</th>
               <th>Fulfilled Resource Count</th>
             </tr>
-            {element.terms.deliver.map(resource => 
-            <tr>
+            {[...element.terms.deliver.entries()].map(([resourceNumber, resource]) => 
+            <tr key={resourceNumber}>
               <td>
                 {resource.tradeSymbol}
               </td>
@@ -154,7 +154,7 @@ function LogInWithAuthKey() {
   const [displayNewKeyPopup, setDisplayNewKeyPopup] = useState(false);
   const [apiKey, setApiKey] = useState("");
   // TODO: Clean these types up
-  const [agentData, setAgentData]: [ResponseData<AgentData, null>, any] = useState({data: null});
+  const [agentData, setAgentData] = useState<ResponseData<AgentData, null>>({data: null});
   const [systemWaypointData, setSystemWaypointData] = useState<Array<ResponseData<WaypointData, WaypointMetaData>>>([]);
   const [contractData, setContractData] = useState<ResponseData<ContractData, null>>({data: null});
   const [agentRequestSent, setAgentRequestSent] = useState(false);
@@ -214,7 +214,7 @@ function LogInWithAuthKey() {
         // todo: clean up this trinary nonsense
         agentRequestSent && agentDataError ? 
           <>
-            <p>There was an error getting your agent's data. Are you using a valid auth key?</p>
+            <p>There was an error getting your agent&apos;s data. Are you using a valid auth key?</p>
             <button id="get-new-key-popup" onClick={() => setDisplayNewKeyPopup(true)}>Get New Key</button>
           </>
         : agentRequestSent && ! agentDataError ?
@@ -250,7 +250,7 @@ function LogInWithAuthKey() {
 }
 
 function getPixelRatio(context) {
-  var backingStore =
+  const backingStore =
     context.backingStorePixelRatio ||
     context.webkitBackingStorePixelRatio ||
     context.mozBackingStorePixelRatio ||
@@ -282,8 +282,8 @@ function WaypointDataPane({setClickedWaypoint, clickedWaypoint, setShipData, age
               <th>Trait Action</th>
             </tr>
             {
-              clickedWaypoint.traits.map(t => {return(
-                <tr className="selectable-row">
+              [...clickedWaypoint.traits.entries()].map(([traitNum, t]) => {return(
+                <tr className="selectable-row" key={traitNum}>
                   <td>
                     {t.name}
                   </td>
@@ -329,8 +329,8 @@ function ViewShipPopup({shipData, setShipData}: {
             <th>Activity</th>
             <th>Price</th>
           </tr>
-          {shipData.map(ship =>(
-            <tr>
+          {[...shipData.entries()].map(([shipNum, ship]) =>(
+            <tr key={shipNum}>
               <td>
                 {ship.type}
               </td>
@@ -410,29 +410,29 @@ function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoint, c
     setClickedWaypoint: Dispatch<SetStateAction<Waypoint>>,
     clickedWaypoint: Waypoint|null,
     fullyExpanded: boolean}) {
-  let ref = useRef<HTMLCanvasElement>(null); // refs start being set to null?? and the type system works???
+  const ref = useRef<HTMLCanvasElement>(null); // refs start being set to null?? and the type system works???
   const [zoom, setZoom] = useState(1);
   const [previousMouseLoc, setPreviousMouseLoc] = useState({x:0, y:0});
   const [offset, setOffset] = useState({x: 0, y: 0});
   const [mouseClickedCoordinates, setMouseClickedCoordinates] = useState<{x:number, y:number}>();
   const [clickMustBeProcessed, setClickMustBeProcessed] = useState(false);
-  let [mouseIsDown, setMouseIsDown] = useState(false);
-  let [mouseWasDragged, setMouseWasDragged] = useState(false);
+  const [mouseIsDown, setMouseIsDown] = useState(false);
+  const [mouseWasDragged, setMouseWasDragged] = useState(false);
 
 
   // todo: do we really need an effect here?
   useEffect(() => {
-    let canvas = ref.current;
+    const canvas = ref.current;
     // No guarantee we actually get the canvas on the first render
     if (!canvas) { return ;}
-    let context = canvas.getContext('2d');
+    const context = canvas.getContext('2d');
 
-    let ratio = getPixelRatio(context);
-    let width = Number(getComputedStyle(canvas)
+    const ratio = getPixelRatio(context);
+    const width = Number(getComputedStyle(canvas)
       .getPropertyValue('width')
       .slice(0, -2));
      
-    let height = Number(getComputedStyle(canvas)
+    const height = Number(getComputedStyle(canvas)
       .getPropertyValue('height')
       .slice(0, -2));
 
@@ -538,7 +538,7 @@ function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoint, c
             const calcNewOffset = (coord: number, diff: number) => {
               return coord+(diff/zoom);
             };
-            let newOffset = {x: calcNewOffset(offset.x, diffX), y: calcNewOffset(offset.y, diffY)};
+            const newOffset = {x: calcNewOffset(offset.x, diffX), y: calcNewOffset(offset.y, diffY)};
             setOffset(newOffset);
             setMouseWasDragged(true);
             setPreviousMouseLoc({x: e.pageX, y: e.pageY});
