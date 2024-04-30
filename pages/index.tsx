@@ -262,53 +262,66 @@ function getPixelRatio(context) {
     return (window.devicePixelRatio || 1) / backingStore;
 }
 
-function WaypointDataPane({setClickedWaypoint, clickedWaypoint, setShipData, agentData, apiKey }:
-  {setClickedWaypoint: Dispatch<SetStateAction<null>>,
-    clickedWaypoint: Waypoint, 
+function WaypointDataPane({setClickedWaypoint: setClickedWaypoints, clickedWaypoints, setShipData, agentData, apiKey }:
+  {setClickedWaypoint: Dispatch<SetStateAction<Waypoint[]>>,
+    clickedWaypoints: Waypoint[], 
     setShipData: Dispatch<SetStateAction<Array<ShipData>|null>>,
     agentData: ResponseData<AgentData, null>,
     apiKey: string}) {
+  
+  function WaypointTable({clickedWaypoint}: {clickedWaypoint: Waypoint}) {
+    return (
+    <table className={"general-table"}>
+      <caption>
+        {`${clickedWaypoint.symbol}: ${clickedWaypoint.type.replace("_", " ")}: belongs to ${clickedWaypoint.faction.symbol}`}
+      </caption>
+      <tbody>
+        <tr>
+          <th>Trait Name</th>
+          <th>Trait Description</th>
+          <th>Trait Action</th>
+        </tr>
+        {
+          [...clickedWaypoint.traits.entries()].map(([traitNum, t]) => {return(
+            <tr className="selectable-row" key={traitNum}
+                onClick={t.symbol === "SHIPYARD" ? 
+                            async () => {
+                              assert(agentData.data, "agent data does not exist");
+                              setShipData((await GetAvailableShips(
+                                apiKey, agentData.data.headquarters.split("-").slice(0,2).join("-"), 
+                                clickedWaypoint.symbol
+                              )).data)
+                            }
+                            : () => null}>
+              <td>
+                {t.name}
+              </td>
+              <td className={"description-text"}>
+                {t.description}
+              </td>
+              <td>
+                {t.symbol === "SHIPYARD" ? "Browse ships" : "N/A"}
+              </td>
+            </tr>
+          )})
+        }
+      </tbody>
+    </table>
+    );
+  }
+
   return (
     <div className={"c waypoint-data"}>
       <div className={"scrollable"}>
-        <table className={"general-table"}>
-          <caption>
-            {`${clickedWaypoint.symbol}: ${clickedWaypoint.type.replace("_", " ")}: belongs to ${clickedWaypoint.faction.symbol}`}
-          </caption>
-          <tbody>
-            <tr>
-              <th>Trait Name</th>
-              <th>Trait Description</th>
-              <th>Trait Action</th>
-            </tr>
-            {
-              [...clickedWaypoint.traits.entries()].map(([traitNum, t]) => {return(
-                <tr className="selectable-row" key={traitNum}
-                    onClick={t.symbol === "SHIPYARD" ? 
-                                async () => {
-                                  assert(agentData.data, "agent data does not exist");
-                                  setShipData((await GetAvailableShips(
-                                    apiKey, agentData.data.headquarters.split("-").slice(0,2).join("-"), 
-                                    clickedWaypoint.symbol
-                                  )).data)
-                                 }
-                                : () => null}>
-                  <td>
-                    {t.name}
-                  </td>
-                  <td className={"description-text"}>
-                    {t.description}
-                  </td>
-                  <td>
-                    {t.symbol === "SHIPYARD" ? "Browse ships" : "N/A"}
-                  </td>
-                </tr>
-              )})
-            }
-          </tbody>
-        </table>
+        {
+          clickedWaypoints.length > 0 ? 
+          [...clickedWaypoints.entries()].map(([waypointNum, clickedWaypoint]) => (
+            <WaypointTable key={waypointNum} clickedWaypoint={clickedWaypoint}></WaypointTable>
+          ))
+          :
+          null
+        }
       </div>
-      <button className={"close-table"} onClick={() => setClickedWaypoint(null)}>Close</button>
     </div>
   );
 }
@@ -331,7 +344,7 @@ function ViewShipPopup({shipData, setShipData}: {
             <th>Price</th>
           </tr>
           {[...shipData.entries()].map(([shipNum, ship]) =>(
-            <tr key={shipNum}>
+            <tr key={shipNum} className="selectable-row">
               <td>
                 {ship.type}
               </td>
@@ -378,15 +391,15 @@ function CoordinateMap({systemWaypointPages, agentData, apiKey}:
     agentData: ResponseData<AgentData, null>,
     apiKey: string}
   ){
-  const [clickedWaypoint, setClickedWaypoint] = useState<Waypoint|null>(null);
+  const [clickedWaypoints, setClickedWaypoints] = useState<Waypoint[]>([]);
   const [shipData, setShipData] = useState<Array<ShipData>|null|undefined>(null);
   
-  if (clickedWaypoint) { 
+  if (clickedWaypoints.length > 0) { 
     return (
       <>
         <CoordinateCanvas systemWaypointPages={systemWaypointPages} agentData={agentData}
-                          setClickedWaypoint={setClickedWaypoint} clickedWaypoint={clickedWaypoint} fullyExpanded={false}/>
-        <WaypointDataPane setClickedWaypoint={setClickedWaypoint} clickedWaypoint={clickedWaypoint} apiKey={apiKey}
+                          setClickedWaypoints={setClickedWaypoints} clickedWaypoints={clickedWaypoints} fullyExpanded={false}/>
+        <WaypointDataPane setClickedWaypoint={setClickedWaypoints} clickedWaypoints={clickedWaypoints} apiKey={apiKey}
                           setShipData={setShipData} agentData={agentData}/>
         {
           // if we manually set shipData to null we want the popup to close. If it was set to undefined from the webrequest
@@ -399,17 +412,17 @@ function CoordinateMap({systemWaypointPages, agentData, apiKey}:
   } else { // waypoint is not clicked on/ has been closed
     return (
       <CoordinateCanvas systemWaypointPages={systemWaypointPages} agentData={agentData} 
-                        setClickedWaypoint={setClickedWaypoint} clickedWaypoint={clickedWaypoint} fullyExpanded={true}/>
+                        setClickedWaypoints={setClickedWaypoints} clickedWaypoints={clickedWaypoints} fullyExpanded={true}/>
     )
   }
 }
 
 
-function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoint, clickedWaypoint, fullyExpanded} : 
+function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoints, clickedWaypoints, fullyExpanded} : 
   {systemWaypointPages: Array<ResponseData<WaypointData, WaypointMetaData>>, 
     agentData: ResponseData<AgentData, null>,
-    setClickedWaypoint: Dispatch<SetStateAction<Waypoint>>,
-    clickedWaypoint: Waypoint|null,
+    setClickedWaypoints: Dispatch<SetStateAction<Waypoint[]>>,
+    clickedWaypoints: Waypoint[],
     fullyExpanded: boolean}) {
   const ref = useRef<HTMLCanvasElement>(null); // refs start being set to null?? and the type system works???
   const [zoom, setZoom] = useState(1);
@@ -419,6 +432,7 @@ function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoint, c
   const [clickMustBeProcessed, setClickMustBeProcessed] = useState(false);
   const [mouseIsDown, setMouseIsDown] = useState(false);
   const [mouseWasDragged, setMouseWasDragged] = useState(false);
+  const effectDeps = [zoom, previousMouseLoc, offset, mouseClickedCoordinates, clickMustBeProcessed, mouseIsDown, mouseWasDragged];
 
 
   // todo: do we really need an effect here?
@@ -439,8 +453,6 @@ function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoint, c
 
     canvas.width = width*ratio;
     canvas.height = height*ratio;
-    // canvas.style.width = `${width}px`;
-    // canvas.style.height = `${height}px`;
 
     let requestId: number;
     // blah
@@ -449,49 +461,64 @@ function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoint, c
       // have to run the canvas type assertion again
       assert(canvas !== null, "Canvas is null");
       assert(context !== null, "Context is null");
-      assert(agentData.data, "no agent data");
       context.clearRect(0, 0, canvas.width, canvas.height);
-      for (const systemWaypointPage of systemWaypointPages) {
+      const waypoints = systemWaypointPages.map(systemWaypointPage => {
         assert(systemWaypointPage.data, "missing waypoint data");
-        for (const waypoint of systemWaypointPage.data.map(CreateWayPoint)){
+        return systemWaypointPage.data.map(CreateWayPoint);
+      }).flat();
+
+      if ((!mouseIsDown) && clickMustBeProcessed) {
+        setClickMustBeProcessed(false);
+        const filteredWaypoints = waypoints.filter(waypoint => {
           const canvasAbsoluteX = (canvas.width / 2) + (waypoint.x + offset.x)*zoom;
           const canvasAbsoluteY = (canvas.height / 2) + (waypoint.y + offset.y)*zoom;
-          if ((!mouseIsDown) && clickMustBeProcessed) {
-            assert(typeof mouseClickedCoordinates !== 'undefined', 'mouse clicked coordinates is undefined');
-            // Get mouse coordinates in terms of the canvas
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            const mouseRelativeToCanvasX = mouseClickedCoordinates.x * scaleX - rect.x;
-            const mouseRelativeToCanvasY = mouseClickedCoordinates.y * scaleY - rect.y;
-            // radial bounds check.
-            // check if the distance between the waypoint and the mouse is less than the size of the waypoint
-            const distanceSquared = (canvasAbsoluteX - mouseRelativeToCanvasX) ** 2 
-                                  + (canvasAbsoluteY - mouseRelativeToCanvasY) ** 2;
-            if (distanceSquared < (waypoint.size+4) ** 2) {
-              setClickedWaypoint(waypoint); // register click
-            }
-            setClickMustBeProcessed(false);
+          assert(typeof mouseClickedCoordinates !== 'undefined', 'mouse clicked coordinates is undefined');
+          // Get mouse coordinates in terms of the canvas
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+          const mouseRelativeToCanvasX = mouseClickedCoordinates.x * scaleX - rect.x;
+          const mouseRelativeToCanvasY = mouseClickedCoordinates.y * scaleY - rect.y;
+          // radial bounds check.
+          // check if the distance between the waypoint and the mouse is less than the size of the waypoint
+          const distanceSquared = (canvasAbsoluteX - mouseRelativeToCanvasX) ** 2 
+                                + (canvasAbsoluteY - mouseRelativeToCanvasY) ** 2;
+          if (distanceSquared < (waypoint.size+4) ** 2) {
+            // Todo: Remove render methods from waypoint so we're not adding stateful calls
+            //       in a filter function
+            return true;
+          } else {
+            return false;
           }
-          waypoint.render(context, canvasAbsoluteX, canvasAbsoluteY);
-          if (waypoint.symbol === agentData.data.headquarters) {
-            context.fillText("You are here", canvasAbsoluteX+(10), canvasAbsoluteY+(10));
-          }
+        });
+        setClickedWaypoints(filteredWaypoints);
+      }
+
+      for (const waypoint of waypoints) {
+        const canvasAbsoluteX = (canvas.width / 2) + (waypoint.x + offset.x)*zoom;
+        const canvasAbsoluteY = (canvas.height / 2) + (waypoint.y + offset.y)*zoom;
+        waypoint.render(context, canvasAbsoluteX, canvasAbsoluteY);
+        assert(agentData.data, "no agent data");
+        if (waypoint.symbol === agentData.data.headquarters) {
+          context.fillText("You are here", canvasAbsoluteX+(10), canvasAbsoluteY+(10));
         }
       }
-      if (clickedWaypoint) {
-        const selectedWaypointAbsoluteX = (canvas.width / 2) + (clickedWaypoint.x + offset.x)*zoom;
-        const selectedWaypointAbsoluteY = (canvas.height / 2) + (clickedWaypoint.y + offset.y)*zoom;
-        clickedWaypoint.renderSelectedCircle(context, selectedWaypointAbsoluteX, selectedWaypointAbsoluteY);
+      if (clickedWaypoints.length > 0) {
+        // all clicked waypoints should have the same (or very close) coordinates.
+        // only draw one selection circle around all these waypoints.
+        const clickedWaypoint = clickedWaypoints[0];
+        const canvasAbsoluteX = (canvas.width / 2) + (clickedWaypoint.x + offset.x)*zoom;
+        const canvasAbsoluteY = (canvas.height / 2) + (clickedWaypoint.y + offset.y)*zoom;
+        clickedWaypoint.renderSelectedCircle(context, canvasAbsoluteX, canvasAbsoluteY);
+        requestId = requestAnimationFrame(render);
       }
-      requestId = requestAnimationFrame(render);
     }
     render();
 
     return () => {
       cancelAnimationFrame(requestId);
     }
-  });
+  }, );
       
   return (
     <canvas

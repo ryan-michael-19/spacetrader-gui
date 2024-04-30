@@ -59,12 +59,11 @@ export class Waypoint {
     // be run right after another is bad practice.
     // render({context, absoluteCoords, offsetCoords, canvasSize, zoomFactor}) {
     render(context, x, y) {
-        let color;
+        const color = "black";
         if (this.traits.map(t=>t.symbol).includes("SHIPYARD")) {
-            color = "red";
-        } else {
-            color = "black";
-        }
+            // color = "red";
+            context.fillText("S", x-10, y+10);
+        } 
         context.fillStyle = color;
         context.strokeStyle = color;
         context.beginPath(); 
