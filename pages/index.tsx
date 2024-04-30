@@ -13,6 +13,7 @@ function AgentDataTable({ agentData }: { agentData: ResponseData<AgentData, null
   return (
     <>
     <table className="general-table">
+      <caption>Player Info</caption>
       <tbody>
       <tr>
         <th>Account ID</th>
@@ -130,6 +131,7 @@ function ContractDataTable({apiKey, contractData, updateContractTable}:
   return (
     <>
       <table className="general-table">
+        <caption>Contract Info</caption>
         <tbody>
           <tr>
             <th>Type</th>
