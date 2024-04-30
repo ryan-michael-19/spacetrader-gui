@@ -61,6 +61,10 @@ export type ShipData = {
     purchasePrice: string
 }
 
+export type AcquiredShipData = {
+    
+}
+
 
 export async function GetAgentData(apiKey: string): Promise<ResponseData<AgentData, null>> {
   const response = await fetch(
@@ -203,5 +207,44 @@ export async function GetAvailableShips(apiKey: string, currentSystem: string, s
     }
     else {
         throw new Error(`Response: ${response.status}`);
+    }
+}
+
+export async function PurchaseShip(apiKey: string, shipType: string, waypointSymbol: string) {
+    const response = await fetch(
+        'https://api.spacetraders.io/v2/my/ships',{
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                "shipType": shipType,
+                "waypointSymbol": waypointSymbol
+            })
+        }
+    );
+    if (response.status === 200) {
+        return await response.json();
+    } else {
+        throw new Error(`Response: ${response.status}`)
+    }
+}
+
+export async function GetAcquiredShips(apiKey: string): Promise<ResponseData<AcquiredShipData, null>> {
+    const response = await fetch(
+        'https://api.spacetraders.io/v2/my/ships',{
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            }
+    });
+    if (response.status === 200) {
+        return await response.json();
+    } else {
+        throw new Error(`Response: ${response.status}`)
     }
 }
