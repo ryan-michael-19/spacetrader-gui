@@ -1,8 +1,8 @@
 import React, { Dispatch, SetStateAction } from 'react';
-import { Waypoint } from '../map_objects';
+import { Waypoint } from '../MapObjects';
 import { components } from "../types";
-import { WebRequestClient, HandleError } from '../web_requests';
-import { assert } from "../utils";
+import { WebRequestClient, HandleError } from '../WebRequests';
+import { assert } from "../Utils";
 
 export function WaypointDataPane({clickedWaypoints, setShipData,  agentData, webReqClient }:
   {

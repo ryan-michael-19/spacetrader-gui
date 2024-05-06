@@ -1,5 +1,5 @@
 import React from "react";
-import { WebRequestClient } from "../web_requests";
+import { WebRequestClient } from "../WebRequests";
 import { components } from "../types";
 
 export function ContractDataTable({webReqClient, contractData, updateContractTable}: 

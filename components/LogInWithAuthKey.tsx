@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { WebRequestClient, HandleError } from "../web_requests";
+import { WebRequestClient, HandleError } from "../WebRequests";
 import { components } from "../types";
 import createClient from "openapi-fetch";
-import { assert } from "../utils";
+import { assert } from "../Utils";
 import { AgentDataTable } from "./AgentDataTable";
 import { CoordinateMap } from "./CoordinateMap";
 import { ContractDataTable } from "./ContractDataTable";

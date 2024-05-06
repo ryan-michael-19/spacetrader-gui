@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import createClient  from "openapi-fetch";
-import { HandleError } from "../web_requests";
+import { HandleError } from "../WebRequests";
 import type { paths } from "../types";
 
 export function NewKeyPopUp({closePopupFunc}: {closePopupFunc: () => void}) {
