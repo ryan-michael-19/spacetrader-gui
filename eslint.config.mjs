@@ -6,6 +6,9 @@ import stylistic from '@stylistic/eslint-plugin';
 
 
 export default [
+  {
+    ignores: ["**/.next/**", "types.d.ts"]
+  },
   {languageOptions: { globals: globals.browser }},
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
@@ -27,4 +30,5 @@ export default [
     ]
     } 
   }
+
 ];
