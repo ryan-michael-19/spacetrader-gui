@@ -1,14 +1,15 @@
 import React, { useState, useRef, useEffect, Dispatch, SetStateAction } from 'react';
 import '../main.css';
-import { GetAgentData, GetSystemWaypointData, GetNewKey, 
-          AcceptContract, GetContractData, ResponseData, 
-          AgentData, ContractData, 
-          WaypointData, WaypointMetaData, GetAvailableShips, ShipData } from '../web_requests'
-import { CreateWayPoint, Waypoint } from '../map_objects'
+import { HandleError } from "../web_requests";
+import { CreateWayPoint, Waypoint } from '../map_objects';
 import { assert } from "../utils"
 
+import createClient  from "openapi-fetch";
+import type { paths, components } from "../types";
 
-function AgentDataTable({ agentData }: { agentData: ResponseData<AgentData, null> }) {
+type WebRequestClient = ReturnType<typeof createClient<paths>>;
+
+function AgentDataTable({ agentData }: { agentData: components["schemas"]["Agent"] | undefined }) {
   // TODO: Error handling when we get bad agentdata
   return (
     <>
@@ -22,10 +23,10 @@ function AgentDataTable({ agentData }: { agentData: ResponseData<AgentData, null
         <th>Credits</th>
       </tr>
       <tr>
-        <td>{agentData.data?.accountId}</td>
-        <td>{agentData.data?.symbol}</td>
-        <td>{agentData.data?.headquarters}</td>
-        <td>{agentData.data?.credits}</td>
+        <td>{agentData?.accountId}</td>
+        <td>{agentData?.symbol}</td>
+        <td>{agentData?.headquarters}</td>
+        <td>{agentData?.credits}</td>
       </tr>
       </tbody>
     </table>
@@ -35,19 +36,44 @@ function AgentDataTable({ agentData }: { agentData: ResponseData<AgentData, null
 
 function NewKeyPopUp({closePopupFunc}: {closePopupFunc: () => void}) {
   const [userName, setUserName] = useState("");
+  const [requestClient, setRequestClient] = useState(
+    createClient<paths>({
+      baseUrl: "https://api.spacetraders.io/v2/",
+      headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+      }
+    })
+  );
   const [authKeyComponentData, setAuthKeyComponentData] = useState(<></>);
   async function getAuthKeyComponentData(username: string){
     try {
-      const authKey = await GetNewKey(username) ;
+      const authKey = HandleError(await requestClient.POST(
+        "/register", {body: {symbol: username, faction: "COSMIC"}}
+      ));
+      if (authKey){
+        setRequestClient(
+          createClient<paths>({
+            baseUrl: "https://api.spacetraders.io/v2/",
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authKey.data.token}`
+            }
+          })
+        )
+      } else {
+        throw Error("Cannot get authentication key");
+      }
       return (              
         <>
           <p id="save-token-warning">
             Save your token. You will not be able to retrieve it again.
           </p>
           <p id="new-key-text" className="wrappable">
-            {authKey}
+            {authKey.data.token}
           </p>
-          <button id="add-to-clipboard" onClick={() => navigator.clipboard.writeText(authKey)}>
+          <button id="add-to-clipboard" onClick={() => navigator.clipboard.writeText(authKey.data.token)}>
             Add To Clipboard
           </button>
         </>
@@ -76,12 +102,19 @@ function NewKeyPopUp({closePopupFunc}: {closePopupFunc: () => void}) {
   )
 }
 
-function ContractDataTable({apiKey, contractData, updateContractTable}: 
-  {apiKey: string, contractData: ResponseData<ContractData, null>, updateContractTable: () => void}) {
-  assert(contractData.data !== null, "contractData is null");
-  const contractTableRows = [...contractData.data.entries()].map(([elementNumber, element]) => (
+function ContractDataTable({webReqClient, contractData, updateContractTable}: 
+  {webReqClient: WebRequestClient, contractData: components["schemas"]["Contract"][], updateContractTable: () => void}) {
+  const contractTableRows = [...contractData.entries()].map(([elementNumber, element]) => (
     <tr className="selectable-row" key={elementNumber}
-      onClick={async () => {await AcceptContract(apiKey, element.id) ; updateContractTable()}}>
+      onClick={async () => {
+        webReqClient.POST("/my/contracts/{contractId}/accept", {
+          params: {
+            path: {
+              contractId: element.id
+            }
+          }
+        });
+        updateContractTable()}}>
       <td>
         {element.type}
       </td>
@@ -99,7 +132,8 @@ function ContractDataTable({apiKey, contractData, updateContractTable}:
               <th>Required Resource Count</th>
               <th>Fulfilled Resource Count</th>
             </tr>
-            {[...element.terms.deliver.entries()].map(([resourceNumber, resource]) => 
+            {
+            element.terms.deliver ? [...element.terms.deliver.entries()].map(([resourceNumber, resource]) => 
             <tr key={resourceNumber}>
               <td>
                 {resource.tradeSymbol}
@@ -114,7 +148,7 @@ function ContractDataTable({apiKey, contractData, updateContractTable}:
                 {resource.unitsFulfilled}
               </td>
             </tr>
-            )}
+            ): null}
           </tbody>
       </table>
       <td>
@@ -151,55 +185,53 @@ function ContractDataTable({apiKey, contractData, updateContractTable}:
   );
 }
 
+async function getPaginatedWaypointData(
+  authedClient: WebRequestClient, headquarters: string, page: number = 1, waypoints: components["schemas"]["Waypoint"][][] = []
+) : Promise<components["schemas"]["Waypoint"][][]> {
+  const requestData = HandleError(await authedClient.GET("/systems/{systemSymbol}/waypoints", {
+    params: {
+      path: {
+        systemSymbol: headquarters
+      },
+      query: {
+        limit: 20,
+        page: page
+      }
+    }}));
+  waypoints.push(requestData.data);
+  if (page > requestData.meta.limit) {
+    return waypoints
+  } else {
+    return getPaginatedWaypointData(
+      authedClient, headquarters, page+1, waypoints);
+  }
+}
+
 function LogInWithAuthKey() {
   // Todo: this is waaaaaay too much state to keep in one place.
   const [displayNewKeyPopup, setDisplayNewKeyPopup] = useState(false);
-  const [apiKey, setApiKey] = useState("");
+  const [authenticatedClient, setAuthenticatedClient] = useState<WebRequestClient|null>(null);
   // TODO: Clean these types up
-  const [agentData, setAgentData] = useState<ResponseData<AgentData, null>>({data: null});
-  const [systemWaypointData, setSystemWaypointData] = useState<Array<ResponseData<WaypointData, WaypointMetaData>>>([]);
-  const [contractData, setContractData] = useState<ResponseData<ContractData, null>>({data: null});
+  const [agentData, setAgentData] = useState<components["schemas"]["Agent"]|undefined>();
+  const [systemWaypointData, setSystemWaypointData] = useState<components["schemas"]["Waypoint"][][]>([]);
+  const [contractData, setContractData] = useState<components["schemas"]["Contract"][]>([]);
   const [agentRequestSent, setAgentRequestSent] = useState(false);
-  const [agentDataError, setAgentDataError] = useState(false);
 
-  async function getAllData(apiKey: string) {
-    let agentDataResult: ResponseData<AgentData, null> = {data: null};
-    let errorFromRequest = false;
-    try {
-      agentDataResult = await GetAgentData(apiKey);
-    }
-    catch(err) {
-      agentDataResult =  {data: null};
-      errorFromRequest = true;
-    }
-    setAgentData(agentDataResult);
+  async function getAllData(authedClient: WebRequestClient) {
+    const agentDataResult = HandleError(await authedClient.GET("/my/agent"));
+    setAgentData(agentDataResult.data);
 
-    let systemWaypointDataResult: Array<ResponseData<WaypointData, WaypointMetaData>> = [];
-    if (agentDataResult.data) {
-      try {
-        systemWaypointDataResult = await GetSystemWaypointData(apiKey, agentDataResult.data.headquarters);
-      }
-      catch(err) {
-        // communicate to CoordinateMap that we couldn't find anything. It will automatically render a blank map.
-        // todo: Make CoordinateMap notify user that there was an error getting system data
-        systemWaypointDataResult = [];
-        errorFromRequest = true;
-      }
-    }
+    // TODO: Reimplement paging
+    // const systemWaypointDataResult = HandleError(await authedClient.GET("/systems/{systemSymbol}/waypoints",{
+    //   params: {path: {systemSymbol: agentDataResult.data.headquarters.split("-").slice(0,2).join("-")}}}))
+    const systemWaypointDataResult = await getPaginatedWaypointData(
+      authedClient, agentDataResult.data.headquarters.split("-").slice(0,2).join("-"));
     setSystemWaypointData(systemWaypointDataResult);
 
-    let contractDataResult: ResponseData<ContractData, null> = {data: null};
-    try {
-      contractDataResult = await GetContractData(apiKey);
-    }
-    catch(err) {
-      contractDataResult = {data: null};
-      errorFromRequest = true;
-    }
-    setContractData(contractDataResult);
+    const contractDataResult = HandleError(await authedClient.GET("/my/contracts"));
+    setContractData(contractDataResult.data);
 
     setAgentRequestSent(true);
-    setAgentDataError(errorFromRequest);
   }
 
   return(
@@ -209,25 +241,37 @@ function LogInWithAuthKey() {
     <div id="main-menu">
       <div id="login">
         <label htmlFor="auth-key">Enter your auth key:</label>
-        <input id="auth-key" type="text" onChange={e => setApiKey(e.target.value)}/>
-        <button id='get-agent-data' onClick={async () => await getAllData(apiKey)}>Get Agent Data</button>
+        <input id="auth-key" type="text" onChange={e => {setAuthenticatedClient(
+          createClient<paths>({
+            baseUrl: "https://api.spacetraders.io/v2/",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${e.target.value}`
+            }
+          }));
+        }}
+        />
+        <button id='get-agent-data' onClick={async () =>{ 
+          assert(authenticatedClient, "authenticated client is null"); 
+          await getAllData(authenticatedClient)}}
+        >Get Agent Data</button>
       </div>
       {
         // todo: clean up this trinary nonsense
-        agentRequestSent && agentDataError ? 
-          <>
-            <p>There was an error getting your agent&apos;s data. Are you using a valid auth key?</p>
-            <button id="get-new-key-popup" onClick={() => setDisplayNewKeyPopup(true)}>Get New Key</button>
-          </>
-        : agentRequestSent && ! agentDataError ?
+        agentRequestSent ?
           <>
             <AgentDataTable agentData={agentData}/>
             <CoordinateMap 
-              systemWaypointPages={systemWaypointData} agentData={agentData} apiKey={apiKey}
+              systemWaypointPages={systemWaypointData} agentData={agentData} webReqClient={
+                (() => {assert(authenticatedClient, "Authenticated client is null") ; return authenticatedClient;})()}
             />
             <ContractDataTable 
-              apiKey={apiKey} contractData={contractData} 
-              updateContractTable={async () => setContractData(await GetContractData(apiKey))}/>
+              webReqClient={(() => {assert(authenticatedClient, "Authenticated client is null") ; return authenticatedClient;})()}
+              contractData={contractData} 
+              updateContractTable={async () => setContractData(
+                HandleError(await authenticatedClient.GET("/my/contracts")).data
+              )}/>
           </>
         : ! agentRequestSent ?
           <>
@@ -264,12 +308,12 @@ function getPixelRatio(context) {
     return (window.devicePixelRatio || 1) / backingStore;
 }
 
-function WaypointDataPane({setClickedWaypoint: setClickedWaypoints, clickedWaypoints, setShipData, agentData, apiKey }:
+function WaypointDataPane({setClickedWaypoint, clickedWaypoints, setShipData,  agentData, webReqClient }:
   {setClickedWaypoint: Dispatch<SetStateAction<Waypoint[]>>,
     clickedWaypoints: Waypoint[], 
-    setShipData: Dispatch<SetStateAction<Array<ShipData>|null>>,
-    agentData: ResponseData<AgentData, null>,
-    apiKey: string}) {
+    setShipData: Dispatch<SetStateAction<components["schemas"]["Shipyard"]>>,
+    agentData: components["schemas"]["Agent"]|undefined,
+    webReqClient: WebRequestClient}) {
   
   function WaypointTable({clickedWaypoint}: {clickedWaypoint: Waypoint}) {
     return (
@@ -288,11 +332,15 @@ function WaypointDataPane({setClickedWaypoint: setClickedWaypoints, clickedWaypo
             <tr className="selectable-row" key={traitNum}
                 onClick={t.symbol === "SHIPYARD" ? 
                             async () => {
-                              assert(agentData.data, "agent data does not exist");
-                              setShipData((await GetAvailableShips(
-                                apiKey, agentData.data.headquarters.split("-").slice(0,2).join("-"), 
-                                clickedWaypoint.symbol
-                              )).data)
+                              assert(agentData, "agent data does not exist");
+                              setShipData(HandleError(await webReqClient.GET("/systems/{systemSymbol}/waypoints/{waypointSymbol}/shipyard", {
+                                params: {
+                                  path: {
+                                    systemSymbol: agentData.headquarters.split("-").slice(0,2).join("-"),
+                                    waypointSymbol: clickedWaypoint.symbol
+                                  }
+                                }
+                              })).data)
                             }
                             : () => null}>
               <td>
@@ -329,12 +377,12 @@ function WaypointDataPane({setClickedWaypoint: setClickedWaypoints, clickedWaypo
 }
 
 function ViewShipPopup({shipData, setShipData}: {
-    shipData: Array<ShipData>|null|undefined,
-    setShipData: Dispatch<SetStateAction<Array<ShipData> | null>>,
+    shipData: components["schemas"]["Shipyard"]|undefined,
+    setShipData: Dispatch<SetStateAction<components["schemas"]["Shipyard"]|null>>,
   }) {
 
   function ShipDataIfExists() {
-    if (shipData) {
+    if (shipData && shipData.ships) {
       return (
         <>
           <tr className="popup-table ">
@@ -345,7 +393,7 @@ function ViewShipPopup({shipData, setShipData}: {
             <th>Activity</th>
             <th>Price</th>
           </tr>
-          {[...shipData.entries()].map(([shipNum, ship]) =>(
+          {[...shipData.ships.entries()].map(([shipNum, ship]) =>(
             <tr key={shipNum} className="selectable-row">
               <td>
                 {ship.type}
@@ -388,26 +436,23 @@ function ViewShipPopup({shipData, setShipData}: {
     </div>)
 }
 
-function CoordinateMap({systemWaypointPages, agentData, apiKey}:
-  {systemWaypointPages: Array<ResponseData<WaypointData, WaypointMetaData>>, 
-    agentData: ResponseData<AgentData, null>,
-    apiKey: string}
+function CoordinateMap({systemWaypointPages, agentData, webReqClient}:
+  {systemWaypointPages: components["schemas"]["Waypoint"][][],
+    agentData: components["schemas"]["Agent"]|undefined,
+    webReqClient: WebRequestClient}
   ){
   const [clickedWaypoints, setClickedWaypoints] = useState<Waypoint[]>([]);
-  const [shipData, setShipData] = useState<Array<ShipData>|null|undefined>(null);
+  const [shipData, setShipData] = useState<components["schemas"]["Shipyard"]|undefined|null>();
   
   if (clickedWaypoints.length > 0) { 
     return (
       <>
         <CoordinateCanvas systemWaypointPages={systemWaypointPages} agentData={agentData}
                           setClickedWaypoints={setClickedWaypoints} clickedWaypoints={clickedWaypoints} fullyExpanded={false}/>
-        <WaypointDataPane setClickedWaypoint={setClickedWaypoints} clickedWaypoints={clickedWaypoints} apiKey={apiKey}
+        <WaypointDataPane setClickedWaypoint={setClickedWaypoints} clickedWaypoints={clickedWaypoints} webReqClient={webReqClient}
                           setShipData={setShipData} agentData={agentData}/>
         {
-          // if we manually set shipData to null we want the popup to close. If it was set to undefined from the webrequest
-          // we want to tell the user we couldn't get any data. There's a good chance this is going to bite me in the ass
-          // in the next few weeks :)
-          shipData !== null ? <ViewShipPopup shipData={shipData} setShipData={setShipData}/> : null
+          shipData ? <ViewShipPopup shipData={shipData} setShipData={setShipData}/> : null
         }
       </>
     );
@@ -421,8 +466,8 @@ function CoordinateMap({systemWaypointPages, agentData, apiKey}:
 
 
 function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoints, clickedWaypoints, fullyExpanded} : 
-  {systemWaypointPages: Array<ResponseData<WaypointData, WaypointMetaData>>, 
-    agentData: ResponseData<AgentData, null>,
+  {systemWaypointPages: components["schemas"]["Waypoint"][][], 
+    agentData: components["schemas"]["Agent"]|undefined,
     setClickedWaypoints: Dispatch<SetStateAction<Waypoint[]>>,
     clickedWaypoints: Waypoint[],
     fullyExpanded: boolean}) {
@@ -465,8 +510,8 @@ function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoints, 
       assert(context !== null, "Context is null");
       context.clearRect(0, 0, canvas.width, canvas.height);
       const waypoints = systemWaypointPages.map(systemWaypointPage => {
-        assert(systemWaypointPage.data, "missing waypoint data");
-        return systemWaypointPage.data.map(CreateWayPoint);
+        assert(systemWaypointPage, "missing waypoint data");
+        return systemWaypointPage.map(CreateWayPoint);
       }).flat();
 
       if ((!mouseIsDown) && clickMustBeProcessed) {
@@ -500,8 +545,8 @@ function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoints, 
         const canvasAbsoluteX = (canvas.width / 2) + (waypoint.x + offset.x)*zoom;
         const canvasAbsoluteY = (canvas.height / 2) + (waypoint.y + offset.y)*zoom;
         waypoint.render(context, canvasAbsoluteX, canvasAbsoluteY);
-        assert(agentData.data, "no agent data");
-        if (waypoint.symbol === agentData.data.headquarters) {
+        assert(agentData, "no agent data");
+        if (waypoint.symbol === agentData.headquarters) {
           context.fillText("You are here", canvasAbsoluteX+(10), canvasAbsoluteY+(10));
         }
       }
@@ -509,10 +554,12 @@ function CoordinateCanvas({systemWaypointPages, agentData, setClickedWaypoints, 
         // all clicked waypoints should have the same (or very close) coordinates.
         // only draw one selection circle around all these waypoints.
         const clickedWaypoint = clickedWaypoints[0];
-        const canvasAbsoluteX = (canvas.width / 2) + (clickedWaypoint.x + offset.x)*zoom;
-        const canvasAbsoluteY = (canvas.height / 2) + (clickedWaypoint.y + offset.y)*zoom;
-        clickedWaypoint.renderSelectedCircle(context, canvasAbsoluteX, canvasAbsoluteY);
-        requestId = requestAnimationFrame(render);
+        if (clickedWaypoint){
+          const canvasAbsoluteX = (canvas.width / 2) + (clickedWaypoint.x + offset.x)*zoom;
+          const canvasAbsoluteY = (canvas.height / 2) + (clickedWaypoint.y + offset.y)*zoom;
+          clickedWaypoint.renderSelectedCircle(context, canvasAbsoluteX, canvasAbsoluteY);
+          requestId = requestAnimationFrame(render);
+        }
       }
     }
     render();

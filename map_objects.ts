@@ -1,7 +1,7 @@
-import { SingleWaypointData } from "./web_requests";
+import type { components } from "./types";
 
 // factory pattern :(
-export function CreateWayPoint(requestData: SingleWaypointData){
+export function CreateWayPoint(requestData: components["schemas"]["Waypoint"]){
     const wayPointType = requestData.type;
     if (wayPointType === "PLANET") {
         return new Planet(requestData);
@@ -44,7 +44,7 @@ export class Waypoint {
     y: number;
     // ALL WAYPOINTS MUST DEFINE this.size !!!!
     // Apparently we can't create an interface to enforce this because of duck typing.
-    constructor(requestData: SingleWaypointData) {
+    constructor(requestData: components["schemas"]["Waypoint"]) {
         if (this.constructor === Waypoint) {
             throw new Error("Waypoint is an abstract class.");
         }
@@ -92,42 +92,42 @@ export class Waypoint {
 }
 
 class Planet extends Waypoint {
-    constructor(requestData: SingleWaypointData){
+    constructor(requestData: components["schemas"]["Waypoint"]){
         super(requestData);
         this.size = 2.5;
     }
 }
 
 class Moon extends Waypoint{
-    constructor(requestData: SingleWaypointData){
+    constructor(requestData: components["schemas"]["Waypoint"]){
         super(requestData);
         this.size = 1.5;
     }
 }
 
 class AsteroidField extends Waypoint {
-    constructor(requestData: SingleWaypointData){
+    constructor(requestData: components["schemas"]["Waypoint"]){
         super(requestData);
         this.size = 5.5;
     }
 }
 
 class GasGiant extends Waypoint {
-    constructor(requestData: SingleWaypointData){
+    constructor(requestData: components["schemas"]["Waypoint"]){
         super(requestData);
         this.size = 4.5;
     }
 }
 
 class OrbitalStation extends Waypoint {
-    constructor(requestData: SingleWaypointData){
+    constructor(requestData: components["schemas"]["Waypoint"]){
         super(requestData);
         this.size = 4;
     }
 }
 
 class JumpGate extends Waypoint {
-    constructor(requestData: SingleWaypointData){
+    constructor(requestData: components["schemas"]["Waypoint"]){
         super(requestData);
         this.size = 6;
     }
@@ -135,14 +135,14 @@ class JumpGate extends Waypoint {
 }
 
 class Asteroid extends Waypoint {
-    constructor(requestData: SingleWaypointData){
+    constructor(requestData: components["schemas"]["Waypoint"]){
         super(requestData);
         this.size = 1;
     }
 }
 
 class FuelStation extends Waypoint {
-    constructor(requestData: SingleWaypointData){
+    constructor(requestData: components["schemas"]["Waypoint"]){
         super(requestData);
         this.size = 3;
     }
