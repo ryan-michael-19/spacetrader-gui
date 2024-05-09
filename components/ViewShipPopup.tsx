@@ -1,9 +1,9 @@
-import React, { Dispatch, SetStateAction } from 'react';
+import { Dispatch, SetStateAction } from 'react';
 import { components } from "../types";
 
 export function ViewShipPopup({shipData, setShipData}: {
-    shipData: components["schemas"]["Shipyard"]|undefined,
-    setShipData: Dispatch<SetStateAction<components["schemas"]["Shipyard"]|null>>,
+    shipData: components["schemas"]["Shipyard"]|undefined|null,
+    setShipData: Dispatch<SetStateAction<components["schemas"]["Shipyard"]|null|undefined>>,
   }) {
 
   function ShipDataIfExists() {

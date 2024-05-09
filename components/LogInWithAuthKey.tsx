@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { WebRequestClient, HandleError } from "../WebRequests";
 import { components } from "../types";
 import createClient from "openapi-fetch";
@@ -8,7 +8,6 @@ import { CoordinateMap } from "./CoordinateMap";
 import { ContractDataTable } from "./ContractDataTable";
 import { NewKeyPopUp } from "./NewKeyPopup";
 import { paths } from "../types";
-
 
 async function getPaginatedWaypointData(
   authedClient: WebRequestClient, headquarters: string, page: number = 1, waypoints: components["schemas"]["Waypoint"][][] = []

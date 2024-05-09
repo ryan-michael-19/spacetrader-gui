@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import createClient  from "openapi-fetch";
 import { HandleError } from "../WebRequests";
 import type { paths } from "../types";

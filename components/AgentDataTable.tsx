@@ -1,4 +1,3 @@
-import React from "react";
 import type { components } from "../types";
 export function AgentDataTable({ agentData }: { agentData: components["schemas"]["Agent"] | undefined }) {
   // TODO: Error handling when we get bad agentdata

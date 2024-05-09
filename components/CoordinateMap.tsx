@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { components } from "../types";
 import { WebRequestClient } from "../WebRequests";
 import { Waypoint } from "../MapObjects";

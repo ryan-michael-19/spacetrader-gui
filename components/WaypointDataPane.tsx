@@ -1,4 +1,4 @@
-import React, { Dispatch, SetStateAction } from 'react';
+import { Dispatch, SetStateAction } from 'react';
 import { Waypoint } from '../MapObjects';
 import { components } from "../types";
 import { WebRequestClient, HandleError } from '../WebRequests';
@@ -7,7 +7,7 @@ import { assert } from "../Utils";
 export function WaypointDataPane({clickedWaypoints, setShipData,  agentData, webReqClient }:
   {
     clickedWaypoints: Waypoint[], 
-    setShipData: Dispatch<SetStateAction<components["schemas"]["Shipyard"]>>,
+    setShipData: Dispatch<SetStateAction<components["schemas"]["Shipyard"]|undefined|null>>,
     agentData: components["schemas"]["Agent"]|undefined,
     webReqClient: WebRequestClient}) {
   
@@ -15,7 +15,8 @@ export function WaypointDataPane({clickedWaypoints, setShipData,  agentData, web
     return (
     <table className={"general-table"}>
       <caption>
-        {`${clickedWaypoint.symbol}: ${clickedWaypoint.type.replace("_", " ")}: belongs to ${clickedWaypoint.faction.symbol}`}
+        {(() => {assert(clickedWaypoint.symbol && clickedWaypoint.type && clickedWaypoint.faction, "clickedWaypoint properties undefined") ;
+                return `${clickedWaypoint.symbol}: ${clickedWaypoint.type.replace("_", " ")}: belongs to ${clickedWaypoint.faction.symbol}`})()}
       </caption>
       <tbody>
         <tr>
@@ -24,11 +25,13 @@ export function WaypointDataPane({clickedWaypoints, setShipData,  agentData, web
           <th>Trait Action</th>
         </tr>
         {
+          // @ts-ignore
           [...clickedWaypoint.traits.entries()].map(([traitNum, t]) => {return(
             <tr className="selectable-row" key={traitNum}
                 onClick={t.symbol === "SHIPYARD" ? 
                             async () => {
                               assert(agentData, "agent data does not exist");
+                              assert(clickedWaypoint.symbol, "clickedWaypoint symbol does not exist");
                               setShipData(HandleError(await webReqClient.GET("/systems/{systemSymbol}/waypoints/{waypointSymbol}/shipyard", {
                                 params: {
                                   path: {
