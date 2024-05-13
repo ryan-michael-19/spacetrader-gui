@@ -41,6 +41,7 @@ input {
     word-wrap: break-word;
     transform: translate(-50%, -50%);
     color: #888888;
+    z-index: 99;
 }
 
 #save-token-warning {

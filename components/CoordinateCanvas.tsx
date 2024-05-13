@@ -68,9 +68,9 @@ export function CoordinateCanvas({systemWaypointPages, agentData, setClickedWayp
       if ((!mouseIsDown) && clickMustBeProcessed) {
         setClickMustBeProcessed(false);
         const filteredWaypoints = waypoints.filter(waypoint => {
-          assert(waypoint.x && waypoint.y, "Waypoint is undefined");
-          const canvasAbsoluteX = (canvas.width / 2) + (waypoint.x + offset.x)*zoom;
-          const canvasAbsoluteY = (canvas.height / 2) + (waypoint.y + offset.y)*zoom;
+          // assert(waypoint.x && waypoint.y, "Waypoint is undefined");
+          const canvasAbsoluteX = (canvas.width / 2) + (waypoint.x! + offset.x)*zoom;
+          const canvasAbsoluteY = (canvas.height / 2) + (waypoint.y! + offset.y)*zoom;
           assert(typeof mouseClickedCoordinates !== 'undefined', 'mouse clicked coordinates is undefined');
           // Get mouse coordinates in terms of the canvas
           const rect = canvas.getBoundingClientRect();
@@ -82,8 +82,8 @@ export function CoordinateCanvas({systemWaypointPages, agentData, setClickedWayp
           // check if the distance between the waypoint and the mouse is less than the size of the waypoint
           const distanceSquared = (canvasAbsoluteX - mouseRelativeToCanvasX) ** 2 
                                 + (canvasAbsoluteY - mouseRelativeToCanvasY) ** 2;
-          assert(waypoint.size, "waypoint size is undefined");
-          if (distanceSquared < (waypoint.size+4) ** 2) {
+          // assert(waypoint.size, "waypoint size is undefined");
+          if (distanceSquared < (waypoint.size!+4) ** 2) {
             // Todo: Remove render methods from waypoint so we're not adding stateful calls
             //       in a filter function
             return true;
@@ -95,9 +95,9 @@ export function CoordinateCanvas({systemWaypointPages, agentData, setClickedWayp
       }
 
       for (const waypoint of waypoints) {
-        assert(waypoint.x && waypoint.y, "waypoint is undefined");
-        const canvasAbsoluteX = (canvas.width / 2) + (waypoint.x + offset.x)*zoom;
-        const canvasAbsoluteY = (canvas.height / 2) + (waypoint.y + offset.y)*zoom;
+        // assert(waypoint.x && waypoint.y, "waypoint is undefined");
+        const canvasAbsoluteX = (canvas.width / 2) + (waypoint.x! + offset.x)*zoom;
+        const canvasAbsoluteY = (canvas.height / 2) + (waypoint.y! + offset.y)*zoom;
         waypoint.render(context, canvasAbsoluteX, canvasAbsoluteY);
         assert(agentData, "no agent data");
         if (waypoint.symbol === agentData.headquarters) {
@@ -109,9 +109,9 @@ export function CoordinateCanvas({systemWaypointPages, agentData, setClickedWayp
         // only draw one selection circle around all these waypoints.
         const clickedWaypoint = clickedWaypoints[0];
         if (clickedWaypoint){
-          assert(clickedWaypoint.x && clickedWaypoint.y, "waypoint is undefined");
-          const canvasAbsoluteX = (canvas.width / 2) + (clickedWaypoint.x + offset.x)*zoom;
-          const canvasAbsoluteY = (canvas.height / 2) + (clickedWaypoint.y + offset.y)*zoom;
+          // assert(clickedWaypoint.x && clickedWaypoint.y, "waypoint is undefined");
+          const canvasAbsoluteX = (canvas.width / 2) + (clickedWaypoint.x! + offset.x)*zoom;
+          const canvasAbsoluteY = (canvas.height / 2) + (clickedWaypoint.y! + offset.y)*zoom;
           clickedWaypoint.renderSelectedCircle(context, canvasAbsoluteX, canvasAbsoluteY);
           requestId = requestAnimationFrame(render);
         }

@@ -10,7 +10,7 @@ export function ViewShipPopup({shipData, setShipData}: {
     if (shipData && shipData.ships) {
       return (
         <>
-          <tr className="popup-table ">
+          <tr className="popup-table">
             <th>Type</th> 
             <th>Name</th>
             <th>Description</th>

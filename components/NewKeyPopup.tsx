@@ -5,35 +5,43 @@ import type { paths } from "../types";
 
 export function NewKeyPopUp({closePopupFunc}: {closePopupFunc: () => void}) {
   const [userName, setUserName] = useState("");
-  const [requestClient, setRequestClient] = useState(
-    createClient<paths>({
+  // const [requestClient, setRequestClient] = useState(
+    // createClient<paths>({
+      // baseUrl: "https://api.spacetraders.io/v2/",
+      // headers: {
+          // 'Accept': 'application/json',
+          // 'Content-Type': 'application/json',
+      // }
+    // })
+  // );
+  const [authKeyComponentData, setAuthKeyComponentData] = useState(<></>);
+  async function getAuthKeyComponentData(username: string){
+    const requestClient = createClient<paths>({
       baseUrl: "https://api.spacetraders.io/v2/",
       headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
       }
     })
-  );
-  const [authKeyComponentData, setAuthKeyComponentData] = useState(<></>);
-  async function getAuthKeyComponentData(username: string){
     try {
       const authKey = HandleError(await requestClient.POST(
         "/register", {body: {symbol: username, faction: "COSMIC"}}
       ));
-      if (authKey){
-        setRequestClient(
-          createClient<paths>({
-            baseUrl: "https://api.spacetraders.io/v2/",
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${authKey.data.token}`
-            }
-          })
-        )
-      } else {
-        throw Error("Cannot get authentication key");
-      }
+      // if (authKey){
+        // TODO: only create client in one spot
+        // setRequestClient(
+          // createClient<paths>({
+            // baseUrl: "https://api.spacetraders.io/v2/",
+            // headers: {
+              // 'Accept': 'application/json',
+              // 'Content-Type': 'application/json',
+              // 'Authorization': `Bearer ${authKey.data.token}`
+            // }
+          // })
+        // )
+      // } else {
+        // throw Error("Cannot get authentication key");
+      // }
       return (              
         <>
           <p id="save-token-warning">
