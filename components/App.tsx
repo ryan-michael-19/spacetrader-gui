@@ -5,7 +5,6 @@ import createClient from 'openapi-fetch';
 import type { paths } from "../types";
 export function App() {
     const [logInAuthKey, setLogInAuthKey] = useState<string>("");
-    // const [goToMainPage, setGoToMainPage] = useState<boolean>(false);
     return (
         <>
         {
