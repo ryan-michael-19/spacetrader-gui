@@ -4,13 +4,13 @@ import { components } from "../types";
 import { WebRequestClient, HandleError } from '../WebRequests';
 import { assert } from "../Utils";
 
-export function WaypointDataPane({clickedWaypoints, setShipData,  agentData, webReqClient }:
+export function WaypointDataPane({clickedWaypoints, setShipyardData,  agentData, webReqClient}:
   {
     clickedWaypoints: Waypoint[], 
-    setShipData: Dispatch<SetStateAction<components["schemas"]["Shipyard"]|undefined|null>>,
+    setShipyardData: Dispatch<SetStateAction<components["schemas"]["Shipyard"]|undefined|null>>,
     agentData: components["schemas"]["Agent"]|undefined,
-    webReqClient: WebRequestClient}) {
-  
+    webReqClient: WebRequestClient
+  }) {
   function WaypointTable({clickedWaypoint}: {clickedWaypoint: Waypoint}) {
     return (
     <table className={"general-table"}>
@@ -32,14 +32,16 @@ export function WaypointDataPane({clickedWaypoints, setShipData,  agentData, web
                             async () => {
                               assert(agentData, "agent data does not exist");
                               assert(clickedWaypoint.symbol, "clickedWaypoint symbol does not exist");
-                              setShipData(HandleError(await webReqClient.GET("/systems/{systemSymbol}/waypoints/{waypointSymbol}/shipyard", {
-                                params: {
-                                  path: {
-                                    systemSymbol: agentData.headquarters.split("-").slice(0,2).join("-"),
-                                    waypointSymbol: clickedWaypoint.symbol
+                              const shipYardData =  
+                                HandleError(await webReqClient.GET("/systems/{systemSymbol}/waypoints/{waypointSymbol}/shipyard", {
+                                  params: {
+                                    path: {
+                                      systemSymbol: agentData.headquarters.split("-").slice(0,2).join("-"),
+                                      waypointSymbol: clickedWaypoint.symbol
+                                    }
                                   }
-                                }
-                              })).data)
+                              })).data;
+                              setShipyardData(shipYardData);
                             }
                             : () => null}>
               <td>
