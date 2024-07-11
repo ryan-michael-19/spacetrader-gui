@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { components } from "../types";
-import { WebRequestClient } from "../WebRequests";
-import { Waypoint } from "../MapObjects";
+import { components } from "../lib/types";
+import { WebRequestClient } from "../lib/WebRequests";
+import { Waypoint } from "../lib/MapObjects";
 import { CoordinateCanvas } from './CoordinateCanvas';
 import { WaypointDataPane } from './WaypointDataPane';
 import { ViewShipPopup } from './ViewShipPopup';

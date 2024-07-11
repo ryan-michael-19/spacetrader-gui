@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { HandleError } from "../WebRequests";
-import type { WebRequestClient } from '../WebRequests';
-import type { components } from '../types';
+import { HandleError } from "../lib/WebRequests";
+import type { WebRequestClient } from '../lib/WebRequests';
+import type { components } from '../lib/types';
 import { AgentDataTable } from './AgentDataTable';
 import { CoordinateMap } from  './CoordinateMap';
 import { ContractDataTable } from './ContractDataTable';

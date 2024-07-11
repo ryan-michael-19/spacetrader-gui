@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { LoginPage } from './LoginPage';
 import { MainPage } from './MainPage';
 import createClient from 'openapi-fetch';
-import type { paths } from "../types";
+import type { paths } from "../lib/types";
 export function App() {
     const [logInAuthKey, setLogInAuthKey] = useState<string>("");
     return (

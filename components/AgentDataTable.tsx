@@ -1,4 +1,4 @@
-import type { components } from "../types";
+import type { components } from "../lib/types";
 export function AgentDataTable({ agentData }: { agentData: components["schemas"]["Agent"] | undefined }) {
   // TODO: Error handling when we get bad agentdata
   return (

@@ -34,6 +34,7 @@
     "**/*.tsx",
     "components/*.tsx",
     "pages/index.tsx",
+    "lib/*.ts",
     "vite.config.mts"  ],
   "exclude": [
     "node_modules"

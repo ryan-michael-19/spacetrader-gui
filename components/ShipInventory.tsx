@@ -1,4 +1,4 @@
-import { components } from '../types';
+import { components } from '../lib/types';
 
 export function ShipInventory ({ShipInventory}: {ShipInventory: components['schemas']['Ship'][]}) {
     return (

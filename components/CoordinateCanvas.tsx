@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, Dispatch, SetStateAction } from 'react';
-import { components } from "../types";
-import { Waypoint, CreateWayPoint } from '../MapObjects';
-import { assert } from "../Utils";
+import { components } from "../lib/types";
+import { Waypoint, CreateWayPoint } from '../lib/MapObjects';
+import { assert } from "../lib/Utils";
 
 
 function getPixelRatio(context) {

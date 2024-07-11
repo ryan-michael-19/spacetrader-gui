@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import createClient  from "openapi-fetch";
-import { HandleError } from "../WebRequests";
-import type { paths } from "../types";
+import { HandleError } from "../lib/WebRequests";
+import type { paths } from "../lib/types";
 
 export function NewKeyPopUp({closePopupFunc}: {closePopupFunc: () => void}) {
   const [userName, setUserName] = useState("");

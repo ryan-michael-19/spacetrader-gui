@@ -1,8 +1,8 @@
 import { Dispatch, SetStateAction } from 'react';
-import { components } from "../types";
-import type { WebRequestClient } from '../WebRequests';
-import { HandleError } from "../WebRequests";
-import { Waypoint } from "../MapObjects";
+import { components } from "../lib/types";
+import type { WebRequestClient } from '../lib/WebRequests';
+import { HandleError } from "../lib/WebRequests";
+import { Waypoint } from "../lib/MapObjects";
 
 
 export function ViewShipPopup({shipYardData, setShipyardData, shipInventory, shipInventoryUpdate, setClickedWaypoints, setAgentData, webReqClient}: {
