@@ -66,6 +66,12 @@ export class Waypoint {
             // color = "red";
             context.fillText("S", x-10, y+10);
         } 
+        if (this.type === "ASTEROID") {
+            // color = "red";
+            context.fillText("A", x+10, y+10);
+        } else if (this.type === "ENGINEERED_ASTEROID") {
+            context.fillText("E", x+5, y+5);
+        }
         context.fillStyle = color;
         context.strokeStyle = color;
         context.beginPath(); 
