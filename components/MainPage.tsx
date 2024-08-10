@@ -1,35 +1,10 @@
 import { useEffect, useState } from 'react';
-import { HandleError } from "../lib/WebRequests";
-import type { WebRequestClient } from '../lib/WebRequests';
+import { HandleError, WebRequestClient, getPaginatedWaypointData } from "../lib/WebRequests";
 import type { components } from '../lib/types';
 import { AgentDataTable } from './AgentDataTable';
 import { CoordinateMap } from  './CoordinateMap';
 import { ContractDataTable } from './ContractDataTable';
 import { ShipInventory } from './ShipInventory';
-
-
-async function getPaginatedWaypointData(
-  authedClient: WebRequestClient, headquarters: string, page: number = 1, waypoints: components["schemas"]["Waypoint"][][] = []
-) : Promise<components["schemas"]["Waypoint"][][]> {
-  const requestData = HandleError(await authedClient.GET("/systems/{systemSymbol}/waypoints", {
-    params: {
-      path: {
-        systemSymbol: headquarters
-      },
-      query: {
-        limit: 20,
-        page: page
-      }
-    }}));
-  await new Promise(r => setTimeout(r, 200));
-  waypoints.push(requestData.data);
-  if (page > 10 || page > requestData.meta.limit) {
-    return waypoints
-  } else {
-    return getPaginatedWaypointData(
-      authedClient, headquarters, page+1, waypoints);
-  }
-}
 
 
 export function MainPage ({ client }: { client: WebRequestClient }) {

@@ -1,4 +1,4 @@
-import { WebRequestClient } from "../WebRequests";
+import { WebRequestClient } from "../lib/WebRequests";
 import { components } from "../lib/types";
 
 export function ContractDataTable({webReqClient, contractData, updateContractTable}: 
