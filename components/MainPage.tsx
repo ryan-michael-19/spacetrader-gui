@@ -1,54 +1,66 @@
-import { useEffect, useState } from 'react';
-import { HandleError, WebRequestClient, getPaginatedWaypointData } from "../lib/WebRequests";
-import type { components } from '../lib/types';
-import { AgentDataTable } from './AgentDataTable';
-import { CoordinateMap } from  './CoordinateMap';
-import { ContractDataTable } from './ContractDataTable';
-import { ShipInventory } from './ShipInventory';
+import { useState, useEffect, useRef } from 'react';
+import { HandleError, WebRequestClient } from "../lib/WebRequests";
+import {components} from '../lib/types';
+
+
+// Courtesy of https://overreacted.io/making-setinterval-declarative-with-react-hooks/
+function useInterval(callback: Function, delay: number) {
+  const savedCallback = useRef<Function>();
+ 
+  // Remember the latest callback.
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
+ 
+  // Set up the interval.
+  useEffect(() => {
+    function tick() {
+        // @ts-ignore
+        savedCallback?.current();
+    } 
+    if (delay !== null) {
+      tick();
+      let id = setInterval(tick, delay);
+      return () => clearInterval(id);
+    }
+  }, [delay]);
+}
 
 
 export function MainPage ({ client }: { client: WebRequestClient }) {
-    const [agentData, setAgentData] = useState<components["schemas"]["Agent"]|null>(null);
-    const [systemWaypointData, setSystemWaypointData] = useState<components["schemas"]["Waypoint"][][]>([]);
-    const [contractData, setContractData] = useState<components["schemas"]["Contract"][]>([]);
-    const [shipInventory, setShipInventory] = useState<components["schemas"]["Ship"][]>([]);
-    // this is bad code but you can't stop me
-    function setWebRequestData() {
-        (async () => {
-            const agentDataFromReq = HandleError(await client.GET("/my/agent")).data;
-            setAgentData(agentDataFromReq);
-            const waypointDataFromReq = await getPaginatedWaypointData(
-                client, agentDataFromReq.headquarters.split("-").slice(0,2).join("-"));
-            setSystemWaypointData(waypointDataFromReq);
-            const contractDataFromReq = HandleError(await client.GET("/my/contracts")).data;
-            setContractData(contractDataFromReq);
-            const shipInvFromReq = HandleError(await client.GET("/my/ships")).data;
-            setShipInventory(shipInvFromReq);
+  const [shipInventory, setShipInventory] = useState<components["schemas"]["Ship"][]>([]);
+
+  useInterval(async () => setShipInventory(
+    HandleError(await client.GET("/my/ships")).data
+  ), 60000);
+
+  return (
+    <>
+      <table className="general-table">
+          <caption>Ship Inventory</caption>
+          <tr>
+              <th>Symbol</th>
+              <th>Frame</th>
+              <th>Registered Name</th>
+              <th>Origin</th>
+              <th>Destination</th>
+              <th>Status</th>
+          </tr> 
+          {shipInventory.map(
+              ship => (
+                  <tr>
+                      <td>{ship.symbol}</td>
+                      <td>{ship.frame.symbol.slice(6)/*remove FRAME_ from the symbol*/}</td>
+                      <td>{ship.registration.name}</td>
+                      <td>{ship.nav.route.origin.symbol}</td>
+                      <td>{ship.nav.route.destination.symbol}</td>
+                      <td>{ship.nav.status}</td>
+                  </tr>
+              )
+          )
           }
-        )();
-    }
-    useEffect(() => {
-        setWebRequestData();
-    }, []);
-
-    return (
-        <>
-            <AgentDataTable agentData={agentData!}/>
-            <CoordinateMap 
-              systemWaypointPages={systemWaypointData} agentData={agentData!} webReqClient={client!}
-              shipInventory={shipInventory}
-              shipInventoryUpdate={setShipInventory}
-              setAgentData={setAgentData} // used to update agent credits
-            />
-            <ContractDataTable 
-              webReqClient={client!}
-              contractData={contractData} 
-              updateContractTable={async () => setContractData(
-                HandleError(await client!.GET("/my/contracts")).data
-              )}/>
-              <ShipInventory ShipInventory={shipInventory}/>
-
-        </>
-    )
-
+      </table>
+      {<button onClick={async () => setShipInventory(HandleError(await client.GET("/my/ships")).data)}>Reload</button>}
+    </>
+  )
 }

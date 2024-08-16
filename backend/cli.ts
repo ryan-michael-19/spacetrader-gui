@@ -10,6 +10,7 @@ if (!API_KEY) {
   throw Error("No api key specified");
 }
 
+
 const CLIENT = createClient<paths>({
   baseUrl: "https://api.spacetraders.io/v2/",
   headers: {
@@ -18,6 +19,7 @@ const CLIENT = createClient<paths>({
       "Authorization": `Bearer ${fs.readFileSync(API_KEY, 'ascii')}`
   }
 });
+
 
 function GetSystemFromWaypoint(waypoint: string){
   return waypoint.split("-").slice(0,2).join("-");
@@ -32,13 +34,12 @@ class CachedWaypointData {
     // check that no other coroutine has the lock
     while (true) {
       if (!this.#hasLock) {
-        console.log("Unlocked")
         // check if cache is empty
         if (!this.#waypointData) {
           // obtain lock 
           console.log("Getting lock");
-          this.#hasLock = true;
-          try{
+          try {
+            this.#hasLock = true;
             this.#waypointData = await getPaginatedWaypointData(CLIENT, system);
           } finally {
             // release lock
@@ -46,8 +47,7 @@ class CachedWaypointData {
             this.#hasLock = false;
           }
           return this.#waypointData;
-        }
-        else {
+        } else {
           return this.#waypointData;
         }
       }
@@ -60,7 +60,9 @@ class CachedWaypointData {
   }
 }
 
+
 const WAYPOINT_CACHE = new CachedWaypointData();
+
 
 class CLIFuncs {
 
@@ -189,23 +191,27 @@ class CLIFuncs {
     if (!asteroid) {
       throw Error(`${shipName} cannot find an engineered asteroid to navigate to`);
     }
-    
-    const navResult = await CLIFuncs.NavigateShip(shipName, asteroid.symbol);
-    const arrivalTime = Date.parse(navResult.data.nav.route.arrival);
+   
+    // TODO: Handle ship already being at destination
+    if (ship.nav.route.destination.symbol !== asteroid.symbol) {
+        await CLIFuncs.NavigateShip(shipName, asteroid.symbol);
+    }
+
+    //const arrivalTime = Date.parse(navResult.data.nav.route.arrival);
+    const arrivalTime = Date.parse(ship.nav.route.arrival);
 
     await new Promise(r => setTimeout(r, arrivalTime - Date.now()));
-
     return await CLIFuncs.MineResources(shipName);
   }
 
-  static AllShipsTravelAndMineAsteroid = async function(this: CLIFuncs, system: string) {
+  static AllShipsTravelAndMineAsteroid = async function(system: string) {
     const miningShips = (await CLIFuncs.GetShipData()).data
       .filter(s=>["IN_ORBIT", "DOCKED"].includes(s.nav.status)  
                && s.mounts.filter(m=>m.symbol.includes("MOUNT_MINING_LASER")).length
                && ! s.cooldown.remainingSeconds);
 
 
-    if (!miningShips) {
+    if (!miningShips.length) {
       throw Error("No available mining ships");
     }
     console.log(`Sending ${miningShips.map(m=>m.symbol)} to mine asteroids`)
@@ -213,13 +219,11 @@ class CLIFuncs {
   }
 
   static MineForever = async function(system: string) {
-    console.log("TICK!!")
     await CLIFuncs.AllShipsTravelAndMineAsteroid(system);
     setInterval(
-      async () => {console.log("TICK!!"); return await CLIFuncs.AllShipsTravelAndMineAsteroid(system);},
+      async () => await CLIFuncs.AllShipsTravelAndMineAsteroid(system),
       10000
-    )
-
+    );
   }
 }
 
