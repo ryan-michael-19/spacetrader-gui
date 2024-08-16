@@ -23,8 +23,47 @@ function GetSystemFromWaypoint(waypoint: string){
   return waypoint.split("-").slice(0,2).join("-");
 }
 
-// TODO: CORRELATE ASTEROID ITEMS WITH MARKET NEEDS TO FIGURE OUT WHAT TO MINE
+
+class CachedWaypointData {
+  #waypointData: components["schemas"]["Waypoint"][][]|null = null;
+  #hasLock: boolean = false;
+
+  public GetPaginatedDataWithCache = async function(this: CachedWaypointData, system: string) {
+    // check that no other coroutine has the lock
+    while (true) {
+      if (!this.#hasLock) {
+        console.log("Unlocked")
+        // check if cache is empty
+        if (!this.#waypointData) {
+          // obtain lock 
+          console.log("Getting lock");
+          this.#hasLock = true;
+          try{
+            this.#waypointData = await getPaginatedWaypointData(CLIENT, system);
+          } finally {
+            // release lock
+            console.log("Releasing lock");
+            this.#hasLock = false;
+          }
+          return this.#waypointData;
+        }
+        else {
+          return this.#waypointData;
+        }
+      }
+      else {
+        // wait for lock
+        console.log("Waiting 1 second for lock to release.");
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
+  }
+}
+
+const WAYPOINT_CACHE = new CachedWaypointData();
+
 class CLIFuncs {
+
   static GetWaypointsByTrait = async function(system: string, trait: components["schemas"]["WaypointTraitSymbol"]) { 
     return (await getPaginatedWaypointData(CLIENT, system)).flat().filter(w => w.traits.map(t=>t.symbol).includes(trait));
   }
@@ -145,9 +184,10 @@ class CLIFuncs {
 
     await CLIFuncs.OrbitShip(shipName);
 
-    const asteroid = (await CLIFuncs.GetWaypointData(system)).data.find(w=>w.type === "ENGINEERED_ASTEROID");
+    //const asteroid = (await CLIFuncs.GetWaypointData(system)).data.find(w=>w.type === "ENGINEERED_ASTEROID");
+    const asteroid = (await WAYPOINT_CACHE.GetPaginatedDataWithCache(system)).flat().find(w=>w.type === "ENGINEERED_ASTEROID");
     if (!asteroid) {
-      throw Error("Cannot find an engineered asteroid to navigate to");
+      throw Error(`${shipName} cannot find an engineered asteroid to navigate to`);
     }
     
     const navResult = await CLIFuncs.NavigateShip(shipName, asteroid.symbol);
@@ -155,18 +195,42 @@ class CLIFuncs {
 
     await new Promise(r => setTimeout(r, arrivalTime - Date.now()));
 
-    const mineResult = await CLIFuncs.MineResources(shipName);
+    return await CLIFuncs.MineResources(shipName);
+  }
 
-    
-    
+  static AllShipsTravelAndMineAsteroid = async function(this: CLIFuncs, system: string) {
+    const miningShips = (await CLIFuncs.GetShipData()).data
+      .filter(s=>["IN_ORBIT", "DOCKED"].includes(s.nav.status)  
+               && s.mounts.filter(m=>m.symbol.includes("MOUNT_MINING_LASER")).length
+               && ! s.cooldown.remainingSeconds);
+
+
+    if (!miningShips) {
+      throw Error("No available mining ships");
+    }
+    console.log(`Sending ${miningShips.map(m=>m.symbol)} to mine asteroids`)
+    return await Promise.all(miningShips.map(async m => await CLIFuncs.TravelToAndMineAsteroid(system, m.symbol)));
+  }
+
+  static MineForever = async function(system: string) {
+    console.log("TICK!!")
+    await CLIFuncs.AllShipsTravelAndMineAsteroid(system);
+    setInterval(
+      async () => {console.log("TICK!!"); return await CLIFuncs.AllShipsTravelAndMineAsteroid(system);},
+      10000
+    )
+
   }
 }
 
 import repl from "repl";
 const r = repl.start();
-
+const cliObject = new CLIFuncs();
 r.context.CLIENT = CLIENT;
+r.context.CLIFuncs = CLIFuncs;
+r.context.cliObject = cliObject;
+
+// static methods
 for (const k in CLIFuncs) {
   r.context[k] = CLIFuncs[k];
-  
 }
