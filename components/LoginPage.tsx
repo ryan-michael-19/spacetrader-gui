@@ -1,6 +1,7 @@
 import { useState, Dispatch, SetStateAction } from 'react';
 import { NewKeyPopUp } from './NewKeyPopup';
 
+ 
 export function LoginPage({ setLoggedIn }: {setLoggedIn: Dispatch<SetStateAction<string>>}) {
     const [displayNewKeyPopup, setDisplayNewKeyPopup] = useState<boolean>();
     const [inputAuthKey, setInputAuthKey] = useState<string>("");
